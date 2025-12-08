@@ -1,0 +1,2 @@
+backend/app/ml_assets/emotion_model_trained.h5 filter=lfs diff=lfs merge=lfs -text
+backend/app/ml_assets/emotion_model_trained.keras filter=lfs diff=lfs merge=lfs -text
