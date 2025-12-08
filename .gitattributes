@@ -1,2 +1,5 @@
 backend/app/ml_assets/emotion_model_trained.h5 filter=lfs diff=lfs merge=lfs -text
 backend/app/ml_assets/emotion_model_trained.keras filter=lfs diff=lfs merge=lfs -text
+backend/app/ml_assets/*.h5 filter=lfs diff=lfs merge=lfs -text
+backend/app/ml_assets/*.keras filter=lfs diff=lfs merge=lfs -text
+datasets/fer-2013.zip filter=lfs diff=lfs merge=lfs -text
