@@ -103,7 +103,7 @@ PsyPredict/
 ### **1. Clone the Repository**
 
 ```bash
-git clone [https://github.com/therandomuser03/psypredict.git](https://github.com/therandomuser03/psypredict.git)
+git clone https://github.com/therandomuser03/psypredict.git
 cd psypredict
 ```
 
