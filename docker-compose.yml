@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  # 🐍 Backend Service
+  backend:
+    build: ./backend
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend:/app  # Live coding: updates code without rebuilding
+      - /app/venv
+    environment:
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY} # Passes your key from .env
+    env_file:
+      - .env
+
+  # ⚛️ Frontend Service
+  frontend:
+    build: ./frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules # Prevent overwriting node_modules
+    depends_on:
+      - backend

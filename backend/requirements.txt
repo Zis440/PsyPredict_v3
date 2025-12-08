@@ -1,0 +1,15 @@
+# --- Core Backend ---
+flask
+flask-cors
+python-dotenv
+google-generativeai
+
+# --- AI & Vision (Version Locked for Stability) ---
+numpy<2.0
+opencv-python
+tensorflow
+pandas
+pillow
+
+# --- Utilities ---
+requests
