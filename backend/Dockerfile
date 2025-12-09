@@ -1,24 +1,26 @@
-# Use Python 3.10 Slim (Smaller & Faster)
+# 1. Use Python 3.10
 FROM python:3.10-slim
 
-# Set working directory
+# 2. Set working directory
 WORKDIR /app
 
-# Install system dependencies (Required for OpenCV/Computer Vision)
+# 3. Install system dependencies
 RUN apt-get update && apt-get install -y \
-    libgl1-mesa-glx \
+    libgl1 \
     libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements and install
+# 4. Install Python dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the rest of the app code
+# 5. Copy your code (and datasets) into the container
 COPY . .
 
-# Expose port (Matches your Flask/FastAPI port)
+ENV PYTHONPATH=/app
+
+# 6. Expose the port (5000 is standard for Flask)
 EXPOSE 5000
 
-# Run the app
-CMD ["python", "app.py"]
+# 7. Run the app
+CMD ["python", "app/main.py"]

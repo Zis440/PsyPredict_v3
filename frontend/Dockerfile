@@ -1,18 +1,18 @@
-# Use Node.js for building
-FROM node:18-alpine
+# 1. Use Node.js
+FROM node:20-alpine
 
-# Set working directory
+# 2. Set working directory
 WORKDIR /app
 
-# Copy package files first (better caching)
+# 3. Copy package files first (for faster builds)
 COPY package.json package-lock.json ./
 RUN npm install
 
-# Copy the rest of the code
+# 4. Copy the rest of the code
 COPY . .
 
-# Expose the Vite port
+# 5. Expose the port (5173 is standard for Vite)
 EXPOSE 5173
 
-# Run dev server (Add --host to allow Docker network access)
+# 6. Start the app (Host flag is crucial for Docker!)
 CMD ["npm", "run", "dev", "--", "--host"]
