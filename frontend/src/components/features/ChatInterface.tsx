@@ -48,7 +48,7 @@ const ChatInterface: React.FC<ChatProps> = ({ currentEmotion }) => {
   };
 
   return (
-    <div className="flex flex-col h-full bg-white rounded-xl overflow-hidden border border-gray-200 shadow-sm">
+    <div className="flex flex-col flex-1 bg-white overflow-hidden border border-gray-200 shadow-sm">
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto p-5 space-y-3 bg-gray-50">
         {messages.map((msg, index) => (

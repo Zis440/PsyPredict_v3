@@ -1,8 +1,8 @@
 // src/components/features/WebcamFeed.tsx
 
-import React, { useRef, useState, useEffect, useCallback } from 'react';
-import Webcam from 'react-webcam';
-import { predictEmotion } from '../../services/api'; // Import your API helper
+import React, { useRef, useState, useEffect, useCallback } from "react";
+import Webcam from "react-webcam";
+import { predictEmotion } from "../../services/api"; // Import your API helper
 
 interface WebcamFeedProps {
   onEmotionDetected: (emotion: string) => void; // Parent component gets the emotion
@@ -17,7 +17,7 @@ const WebcamFeed: React.FC<WebcamFeedProps> = ({ onEmotionDetected }) => {
   const videoConstraints = {
     width: 480,
     height: 360,
-    facingMode: "user"
+    facingMode: "user",
   };
 
   // --- Function to Capture & Send Image ---
@@ -35,7 +35,7 @@ const WebcamFeed: React.FC<WebcamFeedProps> = ({ onEmotionDetected }) => {
     try {
       // 3. Send to Backend
       const result = await predictEmotion(file);
-      
+
       if (result.emotion) {
         setDetectedEmotion(result.emotion);
         setFaceBox(result.face_box); // [x, y, w, h]
@@ -53,7 +53,7 @@ const WebcamFeed: React.FC<WebcamFeedProps> = ({ onEmotionDetected }) => {
   }, [captureAndPredict]);
 
   return (
-<div className="relative inline-block rounded-xl overflow-hidden shadow-md border border-gray-300 bg-black">
+    <div className="relative inline-block rounded-xl overflow-hidden shadow-md border border-gray-300 bg-black">
       {/* 1. The Live Video */}
       <Webcam
         audio={false}
@@ -77,9 +77,13 @@ const WebcamFeed: React.FC<WebcamFeedProps> = ({ onEmotionDetected }) => {
       )}
 
       {/* 3. Emotion Label */}
-      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-indigo-600/80 text-white px-3 py-1.5 rounded-full font-semibold text-sm shadow">
-        {detectedEmotion.toUpperCase()}
-      </div>
+      <div className="absolute top-4 right-4 flex items-center gap-2 bg-neutral-200 text-black px-3 py-1.5 rounded-full font-medium text-sm shadow">
+  <span className="relative flex h-2 w-2">
+    <span className="absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75 animate-ping"></span>
+    <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500"></span>
+  </span>
+  <span>{detectedEmotion.toUpperCase()}</span>
+</div>
     </div>
   );
 };
