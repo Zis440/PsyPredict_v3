@@ -3,12 +3,14 @@ flask
 flask-cors
 python-dotenv
 google-generativeai
+gdown
 
 # --- AI & Vision (Version Locked for Stability) ---
 numpy<2.0
 opencv-python
 tensorflow
 pandas
+tensorflow-cpu
 pillow
 
 # --- Utilities ---

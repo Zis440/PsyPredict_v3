@@ -8,7 +8,6 @@ venv/
 .venv/
 env/
 .env
-.env.production
 instance/
 .pytest_cache/
 backend/.env
