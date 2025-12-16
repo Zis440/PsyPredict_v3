@@ -27,12 +27,9 @@ def create_app():
 if __name__ == "__main__":
     app = create_app()
 
-    # Use Hugging Face PORT if available, otherwise default to 5000 for local dev
-    port = int(os.environ.get("PORT", 5000))
-
-    print(f"🚀 PsyPredict Backend running on port {port}")
+    print("🚀 PsyPredict Backend running on port 7860")
     print("   - /api/predict/emotion [POST]")
     print("   - /api/get_advice?condition=... [GET]")
     print("   - /api/chat [POST]")
 
-    app.run(host="0.0.0.0", port=port, debug=True)
+    app.run(host="0.0.0.0", port=7860, debug=False)

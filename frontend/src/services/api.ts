@@ -1,12 +1,15 @@
 import axios from "axios";
 
 // ✅ Use Vite environment variable
-const API_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:5000";
+const BASE_URL = import.meta.env.VITE_BACKEND_URL;
+
+if (!BASE_URL) {
+  throw new Error("❌ VITE_BACKEND_URL is not defined");
+}
 
 // Create a configured instance of axios
 const apiClient = axios.create({
-  baseURL: API_URL,
+  baseURL: `${BASE_URL}/api`,
 });
 
 // --- API Functions ---
