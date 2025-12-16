@@ -14,11 +14,14 @@ const WebcamFeed: React.FC<WebcamFeedProps> = ({ onEmotionDetected }) => {
   const [faceBox, setFaceBox] = useState<number[] | null>(null);
 
   // Define video constraints (keep it small for speed)
-  const videoConstraints = {
-    width: 480,
-    height: 360,
-    facingMode: "user",
-  };
+const isMobile = window.innerWidth < 768;
+
+const videoConstraints = {
+  width: isMobile ? 200 : 480,
+  height: isMobile ? 200 : 360,
+  facingMode: "user",
+};
+
 
   // --- Function to Capture & Send Image ---
   const captureAndPredict = useCallback(async () => {
@@ -53,7 +56,7 @@ const WebcamFeed: React.FC<WebcamFeedProps> = ({ onEmotionDetected }) => {
   }, [captureAndPredict]);
 
   return (
-    <div className="relative inline-block rounded-xl overflow-hidden shadow-md border border-gray-300 bg-black">
+<div className="relative w-full max-w-[240px] md:max-w-none mx-auto rounded-xl overflow-hidden shadow-md border border-gray-300 bg-black">
       {/* 1. The Live Video */}
       <Webcam
         audio={false}

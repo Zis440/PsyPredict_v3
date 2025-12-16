@@ -8,53 +8,84 @@ const Dashboard: React.FC = () => {
   const [currentEmotion, setCurrentEmotion] = useState<string>("neutral");
 
   return (
-    <div className="h-screen bg-gray-100 flex flex-col overflow-hidden">
+<div className="min-h-screen md:h-screen bg-gray-100 flex flex-col overflow-hidden">
       {/* -------- MAIN APP LAYOUT -------- */}
       <>
         {/* Header */}
         <header className="bg-white shadow-md">
-  <div className="max-w-[1400px] mx-auto px-6 flex justify-between items-center h-16">
-    <Link to={"/"}>
-      <div className="flex items-center gap-2 font-bold text-xl text-slate-800">
-        <div>🧠</div>
-        PsyPredict
-      </div>
-    </Link>
-  </div>
-</header>
-
+          <div className="max-w-[1400px] mx-auto px-6 flex justify-between items-center h-16">
+            <Link to={"/"}>
+              <div className="flex items-center gap-2 font-bold text-xl text-slate-800">
+                <div>🧠</div>
+                PsyPredict
+              </div>
+            </Link>
+          </div>
+        </header>
 
         {/* MAIN GRID */}
         <div className="flex-1 overflow-hidden px-6 py-4">
-          <div className="grid grid-cols-[420px_1fr] gap-6 h-full max-w-[1400px] mx-auto">
-            {/* LEFT SIDE — CAMERA + REMEDY */}
-            <div className="flex flex-col gap-4 h-full">
-              {/* Webcam */}
-              <div className="bg-white p-4 rounded-xl shadow-md border border-gray-200">
+          <div className="max-w-[1400px] mx-auto h-full">
+
+            {/* MOBILE LAYOUT */}
+            <div className="flex flex-col gap-4 md:hidden flex-1 min-h-0">
+              {/* Camera */}
+              <div className="bg-white p-4 rounded-xl shadow-md">
                 <h2 className="text-sm font-semibold text-gray-500 uppercase mb-2">
                   Camera Analysis
                 </h2>
                 <WebcamFeed onEmotionDetected={setCurrentEmotion} />
               </div>
 
-              {/* Remedy Card */}
-              <div className="bg-white p-4 rounded-xl shadow-md border border-gray-200">
+              {/* Therapeutic Insight */}
+              <div className="bg-white p-4 rounded-xl shadow-md">
                 <h2 className="text-sm font-semibold text-gray-500 uppercase mb-2">
                   Therapeutic Insight
                 </h2>
                 <RemedyCard emotion={currentEmotion} />
               </div>
+
+              {/* Chat */}
+<div className="bg-white rounded-xl shadow-md flex flex-col flex-1 min-h-0 overflow-hidden">
+                <div className="p-4">
+                  <h2 className="text-sm font-semibold text-gray-500 uppercase">
+                    Chat
+                  </h2>
+                </div>
+                <div className="flex-1 overflow-y-auto overflow-x-hidden">
+                  <ChatInterface currentEmotion={currentEmotion} />
+                </div>
+              </div>
             </div>
 
-            {/* RIGHT SIDE — CHAT */}
-            <div className="bg-white rounded-xl shadow-md border border-gray-200 flex flex-col overflow-hidden">
-              <div className="p-4 border-b border-gray-200">
-                <h2 className="text-sm font-semibold text-gray-500 uppercase">
-                  Chat
-                </h2>
+            {/* DESKTOP LAYOUT — UNTOUCHED */}
+            <div className="hidden md:grid grid-cols-[420px_1fr] gap-6 h-full">
+              {/* LEFT SIDE */}
+              <div className="flex flex-col gap-4 h-full">
+                <div className="bg-white p-4 rounded-xl shadow-md">
+                  <h2 className="text-sm font-semibold text-gray-500 uppercase mb-2">
+                    Camera Analysis
+                  </h2>
+                  <WebcamFeed onEmotionDetected={setCurrentEmotion} />
+                </div>
+
+                <div className="bg-white p-4 rounded-xl shadow-md">
+                  <h2 className="text-sm font-semibold text-gray-500 uppercase mb-2">
+                    Therapeutic Insight
+                  </h2>
+                  <RemedyCard emotion={currentEmotion} />
+                </div>
               </div>
 
-              <ChatInterface currentEmotion={currentEmotion} />
+              {/* RIGHT SIDE */}
+              <div className="bg-white rounded-xl shadow-md flex flex-col overflow-hidden">
+                <div className="p-4">
+                  <h2 className="text-sm font-semibold text-gray-500 uppercase">
+                    Chat
+                  </h2>
+                </div>
+                <ChatInterface currentEmotion={currentEmotion} />
+              </div>
             </div>
           </div>
         </div>

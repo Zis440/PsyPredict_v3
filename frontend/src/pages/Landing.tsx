@@ -48,54 +48,60 @@ const Landing = () => {
   return (
     <div className="font-sans text-slate-900 bg-white">
       {/* NAVBAR */}
-      <nav className="flex justify-between items-center px-8 py-6 max-w-7xl mx-auto">
-        <div className="flex items-center gap-2 font-bold text-xl text-slate-800">
+      <nav className="flex justify-between items-center px-4 sm:px-6 lg:px-8 py-4 max-w-7xl mx-auto">
+        <div className="flex items-center gap-2 font-bold text-lg sm:text-xl text-slate-800">
           <span>🧠</span>
           PsyPredict
         </div>
       </nav>
 
       {/* HERO */}
-      <header className="text-center px-6 mt-20 mb-28 max-w-4xl mx-auto">
-        <div className="inline-flex items-center gap-2 bg-indigo-50 text-indigo-700 text-xs font-semibold px-4 py-1.5 rounded-full mb-6">
+      <header className="text-center px-4 sm:px-6 mt-14 sm:mt-20 mb-20 sm:mb-28 max-w-4xl mx-auto">
+        <div className="inline-flex items-center gap-2 bg-indigo-50 text-indigo-700 text-[11px] sm:text-xs font-semibold px-3 py-1.5 rounded-full mb-5">
           <Sparkles size={14} /> AI-Powered Emotional Intelligence
         </div>
 
-        <h1 className="text-5xl md:text-6xl font-extrabold leading-tight mb-6">
+        <h1 className="text-3xl sm:text-4xl md:text-6xl font-extrabold leading-tight mb-5">
           Understand Your Emotions.
           <br />
           <span className="text-indigo-600">Empower Your Mind.</span>
         </h1>
 
-        <p className="text-lg text-slate-500 mb-10 max-w-2xl mx-auto">
+        <p className="text-sm sm:text-base md:text-lg text-slate-500 mb-8 max-w-2xl mx-auto">
           Advanced AI-based emotion understanding to help you navigate your
-          feelings safely and privately. Gain clarity and support when you need
-          it most.
+          feelings safely and privately.
         </p>
 
-        <div className="flex justify-center gap-4">
+        {/* Buttons */}
+        <div className="flex flex-row justify-center gap-3 sm:gap-4">
           <button
             onClick={() => navigate("/dashboard")}
-            className="bg-indigo-600 text-white px-5 py-2.5 rounded-full text-sm font-semibold hover:bg-indigo-700 transition"
+            className="bg-indigo-600 text-white px-6 py-3 rounded-full text-sm font-semibold hover:bg-indigo-700 transition"
           >
             Start Analysis
           </button>
           <button
             onClick={() => navigate("/learn-more")}
-            className="bg-white border border-slate-200 px-5 py-2.5 rounded-full text-sm font-semibold hover:bg-slate-50 transition"
+            className="bg-white border border-slate-200 px-6 py-3 rounded-full text-sm font-semibold hover:bg-slate-50 transition"
           >
             Learn More
           </button>
         </div>
 
         {/* HERO IMAGE */}
-        <div className="mt-20 relative rounded-xl overflow-hidden shadow-2xl h-72 md:h-96">
-          <img src="screenshot.webp" className="w-full h-full object-cover" />
-          <div className="absolute bottom-6 left-6 bg-white/90 backdrop-blur px-6 py-4 rounded-2xl flex items-center gap-4 shadow">
-            <CheckCircle className="text-indigo-600" />
+        <div className="mt-14 sm:mt-20 relative rounded-xl overflow-hidden shadow-2xl h-56 sm:h-72 md:h-96">
+          <img
+            src="screenshot.webp"
+            className="w-full h-full object-cover"
+            alt="App preview"
+          />
+
+          {/* Floating Card */}
+          <div className="absolute bottom-4 left-4 right-4 sm:left-6 sm:right-auto bg-white/90 backdrop-blur px-4 py-3 rounded-xl flex items-center gap-3 shadow max-w-xs">
+            <CheckCircle className="text-indigo-600 shrink-0" />
             <div className="text-left">
-              <p className="font-bold text-sm">Analysis Complete</p>
-              <p className="text-xs text-slate-500">
+              <p className="font-bold text-xs sm:text-sm">Analysis Complete</p>
+              <p className="text-[11px] sm:text-xs text-slate-500">
                 You seem to be feeling reflective today.
               </p>
             </div>
@@ -144,7 +150,7 @@ const Landing = () => {
 
       {/* PRIVACY */}
       <section className="py-24 px-6 max-w-6xl mx-auto">
-        <div className="bg-indigo-50 rounded-[3rem] p-10 md:p-16 flex flex-col md:flex-row gap-12 items-center">
+        <div className="bg-indigo-50 rounded-4xl sm:rounded-[3rem] p-6 sm:p-10 md:p-16 flex flex-col md:flex-row gap-10 items-center">
           <div className="flex-1">
             <p className="text-indigo-600 text-xs font-bold uppercase mb-2">
               Trust & Safety
@@ -184,8 +190,8 @@ const Landing = () => {
 
             {/* Plain-English Guarantee */}
             <p className="mt-6 text-sm text-slate-500 italic">
-              In simple terms: if you refresh the page, it&apos;s like you were never
-              here.
+              In simple terms: if you refresh the page, it&apos;s like you were
+              never here.
             </p>
 
             {/* Disclaimer */}
@@ -200,7 +206,7 @@ const Landing = () => {
               <img
                 src="https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=2670&auto=format&fit=crop"
                 alt="Secure system visualization"
-                className="opacity-90"
+                className="w-full h-auto object-cover opacity-90"
               />
             </div>
           </div>
@@ -216,10 +222,10 @@ const Landing = () => {
           A team of engineers, AI researchers, and designers working together.
         </p>
 
-        <div className="max-w-6xl mx-auto grid md:grid-cols-4 gap-12 text-left">
+        <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 md:gap-12 text-left">
           {team.map((s, i) => (
             <div key={i} className="bg-white p-8 rounded-3xl shadow-sm">
-              <div className="w-20 h-20 rounded-2xl overflow-hidden mb-4">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden mb-4">
                 <img
                   src={s.photo}
                   alt={s.title}
@@ -271,7 +277,7 @@ const Landing = () => {
       </section>
 
       {/* FOOTER */}
-      <footer className="border-t py-10 text-center text-sm text-slate-400">
+      <footer className="border-t py-8 text-center text-xs sm:text-sm text-slate-400">
         © 2025 PsyPredict. All rights reserved.
       </footer>
     </div>
