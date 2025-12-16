@@ -1,8 +1,0 @@
-# 1. Login to Docker
-docker login
-
-# 2. Build the backend image (with the heavy model inside)
-docker build -t yourusername/psypredict-backend ./backend
-
-# 3. Push it to the cloud
-docker push yourusername/psypredict-backend

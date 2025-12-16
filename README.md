@@ -1,7 +1,8 @@
-# 🌿 **PsyPredict v2**
+# 🌿 **PsyPredict**
 > *AI-Augmented Multi-Modal Mental Health Assistance System*
 
-![License](https://img.shields.io/badge/license-MIT-blue.svg) ![Status](https://img.shields.io/badge/status-active-success.svg) ![Python](https://img.shields.io/badge/backend-python-yellow.svg) ![React](https://img.shields.io/badge/frontend-react-cyan.svg)
+![License](https://img.shields.io/badge/license-MIT-blue.svg) ![Status](https://img.shields.io/badge/status-active-success.svg) ![Python](https://img.shields.io/badge/backend-python-yellow.svg) ![React](https://img.shields.io/badge/frontend-react-cyan.svg) ![Vercel](https://img.shields.io/badge/frontend-Vercel-black) ![HuggingFace](https://img.shields.io/badge/backend-Hugging%20Face-yellow)
+
 
 ---
 
@@ -144,6 +145,20 @@ Access the app at `http://localhost:5173`.
 
 -----
 
+## 🌍 **Deployment**
+
+The project is deployed using a modern cloud-based setup:
+
+- **Frontend:** Deployed on **Vercel**  
+  👉 https://psypredict.vercel.app
+
+- **Backend:** Deployed on **Hugging Face Spaces**  
+  👉 https://huggingface.co/spaces/therandomuser03/psypredict-backend
+
+This separation ensures fast global delivery of the UI while leveraging Hugging Face’s optimized infrastructure for AI model inference.
+
+-----
+
 ## ⚠️ **Disclaimer**
 
 > **Important:** This system is intended for **emotional support and educational purposes only**. It does **not** provide medical diagnosis or professional therapy. If you or someone you know is in crisis, please contact emergency services or a licensed mental health professional immediately.
@@ -156,4 +171,5 @@ Contributions are welcome\! Please fork the repo and submit a pull request.
 
 ## 📄 **License**
 
-MIT License
+This project is licensed under the **MIT License**.  
+See the full license text here: **[LICENSE](./LICENSE)**.
