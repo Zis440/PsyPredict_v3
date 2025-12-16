@@ -56,7 +56,7 @@ const videoConstraints = {
   }, [captureAndPredict]);
 
   return (
-<div className="relative w-full max-w-[240px] md:max-w-none mx-auto rounded-xl overflow-hidden shadow-md border border-gray-300 bg-black">
+<div className="relative w-full max-w-60 md:max-w-none mx-auto rounded-xl overflow-hidden shadow-md border border-gray-300 bg-black">
       {/* 1. The Live Video */}
       <Webcam
         audio={false}

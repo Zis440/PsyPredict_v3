@@ -59,7 +59,7 @@ const ChatInterface: React.FC<ChatProps> = ({ currentEmotion }) => {
   };
 
   return (
-    <div className="flex flex-col flex-1 bg-white overflow-hidden min-w-0">
+    <div className="flex flex-col h-full bg-white overflow-hidden min-w-0">
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden p-5 space-y-3 bg-gray-50 min-w-0">
         {messages.map((msg, index) => (
@@ -71,7 +71,7 @@ const ChatInterface: React.FC<ChatProps> = ({ currentEmotion }) => {
           >
             {/* Bot Icon */}
             {msg.role === "assistant" && (
-              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center">
+              <div className="shrink-0 w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center">
                 <Bot className="w-4 h-4 text-indigo-600" />
               </div>
             )}
@@ -85,7 +85,7 @@ const ChatInterface: React.FC<ChatProps> = ({ currentEmotion }) => {
                 p-3
                 text-sm
                 shadow-sm
-                break-words
+                wrap-break-word
                 whitespace-pre-wrap
                 overflow-hidden
                 ${
@@ -100,7 +100,7 @@ const ChatInterface: React.FC<ChatProps> = ({ currentEmotion }) => {
 
             {/* User Icon */}
             {msg.role === "user" && (
-              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center">
+              <div className="shrink-0 w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center">
                 <User className="w-4 h-4 text-white" />
               </div>
             )}
@@ -117,7 +117,7 @@ const ChatInterface: React.FC<ChatProps> = ({ currentEmotion }) => {
       </div>
 
       {/* Input Area */}
-      <div className="p-3 bg-white border-t border-gray-200 flex gap-2 min-w-0">
+      <div className="p-3 bg-white border-t border-gray-200 flex gap-2 min-w-0 shrink-0">
         <input
           type="text"
           className="flex-1 min-w-0 border border-gray-300 rounded-full px-4 py-2 focus:outline-none focus:border-indigo-500 text-sm"
