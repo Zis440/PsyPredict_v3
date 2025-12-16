@@ -1,4 +1,4 @@
-# 🌿 **PsyPredict**
+# 🧠 **PsyPredict**
 > *AI-Augmented Multi-Modal Mental Health Assistance System*
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg) ![Status](https://img.shields.io/badge/status-active-success.svg) ![Python](https://img.shields.io/badge/backend-python-yellow.svg) ![React](https://img.shields.io/badge/frontend-react-cyan.svg) ![Vercel](https://img.shields.io/badge/frontend-Vercel-black) ![HuggingFace](https://img.shields.io/badge/backend-Hugging%20Face-yellow)
