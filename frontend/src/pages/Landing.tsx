@@ -259,21 +259,20 @@ const Landing = () => {
             </p>
 
             <h2 className="text-3xl font-bold mb-6">
-              Privacy by Design. No Memory. No Storage.
+              Secure & Private. Your Journey, Recorded Safely.
             </h2>
 
             <p className="text-slate-600 mb-6">
-              PsyPredict is designed to work without storing your personal data.
-              All interactions are processed in real time and automatically
-              erased when you refresh or close the page.
+              PsyPredict provides a safe, secure account to track your emotional progress over time.
+              Your history is private, encrypted, and accessible only to you.
             </p>
 
             <ul className="space-y-3 text-sm font-medium">
               {[
-                "Session-Only Processing (cleared on refresh)",
-                "Secure, Encrypted Communication",
-                "No Accounts. No Tracking. No Logs",
-                "No Hidden or Persistent Storage"
+                "Secure User Accounts",
+                "Encrypted History Storage",
+                "Private & Confidential Analysis",
+                "Delete Your Data Anytime"
               ].map((item, index) => (
                 <motion.li 
                   key={index}
@@ -291,8 +290,7 @@ const Landing = () => {
 
             {/* Plain-English Guarantee */}
             <p className="mt-6 text-sm text-slate-500 italic">
-              In simple terms: if you refresh the page, it&apos;s like you were
-              never here.
+              Your data is yours. You have full control to view or delete your history at any time.
             </p>
 
             {/* Disclaimer */}
