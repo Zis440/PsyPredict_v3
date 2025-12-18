@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import WebcamFeed from "../components/features/WebcamFeed";
 import ChatInterface from "../components/features/ChatInterface";
 import RemedyCard from "../components/features/RemedyCard";
-import { Link } from "react-router-dom";
 
 import Navbar from "../components/common/Navbar";
 

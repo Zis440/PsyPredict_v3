@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '../components/common/Navbar';
 import ChatInterface from '../components/features/ChatInterface';
-import { Trash2, AlertTriangle, X } from 'lucide-react';
+import { Trash2, AlertTriangle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 const HistoryDetail: React.FC = () => {
