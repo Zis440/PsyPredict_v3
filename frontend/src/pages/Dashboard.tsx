@@ -4,6 +4,8 @@ import ChatInterface from "../components/features/ChatInterface";
 import RemedyCard from "../components/features/RemedyCard";
 import { Link } from "react-router-dom";
 
+import Navbar from "../components/common/Navbar";
+
 const Dashboard: React.FC = () => {
   const [currentEmotion, setCurrentEmotion] = useState<string>("neutral");
 
@@ -11,17 +13,8 @@ const Dashboard: React.FC = () => {
     <div className="min-h-screen md:h-screen bg-gray-100 flex flex-col overflow-hidden">
       {/* -------- MAIN APP LAYOUT -------- */}
       <>
-        {/* Header */}
-        <header className="bg-white shadow-md">
-          <div className="max-w-[1400px] mx-auto px-6 flex justify-between items-center h-16">
-            <Link to={"/"}>
-              <div className="flex items-center gap-2 font-bold text-xl text-slate-800">
-                <div>🧠</div>
-                PsyPredict
-              </div>
-            </Link>
-          </div>
-        </header>
+        {/* Navbar */}
+        <Navbar />
 
         {/* MAIN GRID */}
         <div className="flex-1 overflow-hidden px-6 py-4">
