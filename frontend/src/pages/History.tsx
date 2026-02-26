@@ -4,30 +4,41 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { Link } from 'react-router-dom';
 import { MessageSquare, Calendar, ChevronRight } from 'lucide-react';
-import type { Database } from '../types/supabase';
 
-type Conversation = Database['public']['Tables']['conversations']['Row'];
 
 const History: React.FC = () => {
-    const { user } = useAuth();
-    const [conversations, setConversations] = useState<Conversation[]>([]);
+    const { user, isLocalMode } = useAuth();
+    const [conversations, setConversations] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         if (!user) return;
 
         const fetchHistory = async () => {
-            const { data, error } = await supabase
-                .from('conversations')
-                .select('*')
-                .eq('user_id', user.id)
-                .order('created_at', { ascending: false });
+            let combined: any[] = [];
 
-            if (error) {
-                console.error('Error fetching history:', error);
-            } else if (data) {
-                setConversations(data);
+            // 1. Fetch Local History
+            const localRaw = localStorage.getItem('psypredict_local_history');
+            if (localRaw) {
+                const localHistory = JSON.parse(localRaw);
+                combined = Object.values(localHistory).map((c: any) => ({ ...c, is_local: true }));
             }
+
+            // 2. Fetch Supabase History (if not in local-only mode)
+            if (!isLocalMode) {
+                const { data, error } = await supabase
+                    .from('conversations')
+                    .select('*')
+                    .eq('user_id', user.id);
+
+                if (!error && data) {
+                    combined = [...combined, ...data.map((c: any) => ({ ...c, is_local: false }))];
+                }
+            }
+
+            // Sort by date
+            combined.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+            setConversations(combined);
             setLoading(false);
         };
 
@@ -37,7 +48,7 @@ const History: React.FC = () => {
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
             <Navbar />
-            
+
             <main className="flex-1 max-w-4xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-12">
                 <div className="mb-8">
                     <h1 className="text-2xl font-bold text-gray-900">Consultation History</h1>
@@ -46,7 +57,7 @@ const History: React.FC = () => {
 
                 {loading ? (
                     <div className="flex justify-center py-12">
-                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
                     </div>
                 ) : conversations.length === 0 ? (
                     <div className="text-center py-16 bg-white rounded-2xl border border-gray-200 border-dashed">
@@ -62,29 +73,34 @@ const History: React.FC = () => {
                 ) : (
                     <div className="grid gap-4">
                         {conversations.map((conv) => (
-                            <Link 
-                                key={conv.id} 
+                            <Link
+                                key={conv.id}
                                 to={`/history/${conv.id}`}
                                 className="bg-white p-6 rounded-xl border border-gray-200 hover:border-indigo-300 hover:shadow-md transition-all group flex items-center justify-between"
                             >
                                 <div className="flex items-start gap-4">
-                                     <div className="bg-indigo-50 p-3 rounded-lg group-hover:bg-indigo-100 transition-colors">
+                                    <div className="bg-indigo-50 p-3 rounded-lg group-hover:bg-indigo-100 transition-colors">
                                         <MessageSquare className="text-indigo-600" size={20} />
-                                     </div>
-                                     <div>
-                                        <h3 className="font-semibold text-gray-900 mb-1">{conv.title || 'Untitled Conversation'}</h3>
+                                    </div>
+                                    <div>
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <h3 className="font-semibold text-gray-900">{conv.title || 'Untitled Conversation'}</h3>
+                                            {conv.is_local && (
+                                                <span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-md font-bold uppercase tracking-wider">Local</span>
+                                            )}
+                                        </div>
                                         <div className="flex items-center gap-2 text-sm text-gray-500">
                                             <Calendar size={14} />
                                             {new Date(conv.created_at).toLocaleDateString(undefined, {
-                                                weekday: 'short', 
-                                                year: 'numeric', 
-                                                month: 'short', 
+                                                weekday: 'short',
+                                                year: 'numeric',
+                                                month: 'short',
                                                 day: 'numeric'
                                             })}
                                             <span>•</span>
                                             {new Date(conv.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                         </div>
-                                     </div>
+                                    </div>
                                 </div>
                                 <ChevronRight className="text-gray-300 group-hover:text-indigo-600 transition-colors" />
                             </Link>

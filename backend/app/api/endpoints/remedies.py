@@ -1,22 +1,45 @@
-from flask import Blueprint, request, jsonify
+"""
+remedies.py — PsyPredict Remedy Endpoint (FastAPI)
+Preserved feature: CSV-based remedy lookup (remedy_engine.py unchanged).
+Adapted from Flask Blueprint to FastAPI APIRouter with async wrapper.
+"""
+from __future__ import annotations
+
+import asyncio
+import logging
+
+from fastapi import APIRouter, HTTPException, Query
+
+from app.schemas import RemedyResponse
 from app.services.remedy_engine import remedy_engine
 
-remedies_bp = Blueprint('remedies', __name__)
+logger = logging.getLogger(__name__)
 
-@remedies_bp.route('/get_advice', methods=['GET'])
-def get_advice():
+router = APIRouter()
+
+
+@router.get("/get_advice", response_model=RemedyResponse)
+async def get_advice(condition: str = Query(..., min_length=1, max_length=100)):
     """
-    Query Param: ?condition=Depression
-    Returns: JSON with meds, treatments, and Gita story.
+    Lookup remedy by condition name (case-insensitive partial match).
+    Preserved from original implementation — remedy_engine.py unchanged.
+    Example: GET /api/get_advice?condition=Anxiety
     """
-    condition = request.args.get('condition')
-    
+    # Strip and validate
+    condition = condition.strip()
     if not condition:
-        return jsonify({"error": "Missing 'condition' parameter"}), 400
+        raise HTTPException(status_code=400, detail="Condition parameter cannot be empty")
 
-    result = remedy_engine.get_remedy(condition)
+    # Run sync CSV lookup in thread pool
+    result = await asyncio.to_thread(remedy_engine.get_remedy, condition)
 
-    if result:
-        return jsonify(result)
-    else:
-        return jsonify({"message": "No specific remedy found for this condition."}), 404
+    if result is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No remedy found for condition: '{condition}'",
+        )
+
+    if "error" in result:
+        raise HTTPException(status_code=500, detail=result["error"])
+
+    return RemedyResponse(**result)

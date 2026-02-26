@@ -1,23 +1,28 @@
 // src/components/features/ChatInterface.tsx
+// Upgraded: Displays structured PsychReport (clinical report panel) below each AI response.
+// All existing chat UI, Supabase session logic, and PDF export preserved.
 
 import React, { useState, useRef, useEffect } from "react";
 import { sendChatMessage } from "../../services/api";
-import { Bot, User, FileText } from "lucide-react";
+import type { PsychReport, CrisisResource, RemedyData } from "../../services/api";
+import { Bot, User, FileText, ChevronDown, ChevronUp, AlertTriangle, Phone } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../hooks/useAuth";
 import type { Database } from "../../types/supabase";
 import { generateChatPDF } from "../../utils/pdfUtils";
 import { useNavigate } from "react-router-dom";
 
-
 interface Message {
   role: "user" | "assistant";
   content: string;
+  report?: PsychReport;
+  fusionScore?: number;
+  remedy?: RemedyData;
 }
 
 interface ChatProps {
   currentEmotion: string;
-  sessionId?: string; // Optional: If provided, loads history; else creates new session
+  sessionId?: string;
 }
 
 type MessageRow = Database['public']['Tables']['messages']['Row'];
@@ -28,13 +33,179 @@ const WELCOME_MESSAGE: Message = {
   content: "Hello. I am here to listen. How are you feeling right now?",
 };
 
+// ── Risk Level Display Config ──────────────────────────────────────────────
+const RISK_CONFIG: Record<string, { color: string; bg: string; label: string }> = {
+  MINIMAL: { color: "text-green-700", bg: "bg-green-100", label: "Minimal Risk" },
+  LOW: { color: "text-blue-700", bg: "bg-blue-100", label: "Low Risk" },
+  MODERATE: { color: "text-yellow-700", bg: "bg-yellow-100", label: "Moderate Risk" },
+  HIGH: { color: "text-orange-700", bg: "bg-orange-100", label: "High Risk" },
+  CRITICAL: { color: "text-red-700", bg: "bg-red-100", label: "Critical Risk" },
+};
+
+// ── Remedy Panel ──────────────────────────────────────────────────────────
+const RemedyPanel: React.FC<{ remedy: RemedyData }> = ({ remedy }) => {
+  const [open, setOpen] = React.useState(false);
+  return (
+    <div className="mt-2 border border-amber-200 rounded-xl overflow-hidden text-xs bg-white">
+      <button
+        onClick={() => setOpen(p => !p)}
+        className="w-full flex items-center justify-between px-3 py-2 bg-amber-50 hover:bg-amber-100 transition-colors"
+      >
+        <div className="flex items-center gap-2 text-amber-700 font-semibold">
+          <span>🌿</span>
+          <span>{remedy.condition} — Ancient Wisdom & Treatment</span>
+        </div>
+        <span className="text-amber-400">{open ? <ChevronUp size={13} /> : <ChevronDown size={13} />}</span>
+      </button>
+      {open && (
+        <div className="px-3 py-3 space-y-3 bg-amber-50/50">
+          <div>
+            <p className="font-semibold text-amber-800 uppercase tracking-wide text-[10px] mb-1">🕉️ Gita Wisdom</p>
+            <p className="text-gray-700 italic">"{remedy.gita_remedy}"</p>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-white rounded-lg p-2 shadow-sm">
+              <p className="font-semibold text-gray-500 uppercase tracking-wide text-[10px] mb-1">💊 Medications</p>
+              <p className="text-gray-700">{remedy.medications}</p>
+            </div>
+            <div className="bg-white rounded-lg p-2 shadow-sm">
+              <p className="font-semibold text-gray-500 uppercase tracking-wide text-[10px] mb-1">📋 Dosage</p>
+              <p className="text-gray-700">{remedy.dosage}</p>
+            </div>
+          </div>
+          <div className="bg-white rounded-lg p-2 shadow-sm">
+            <p className="font-semibold text-gray-500 uppercase tracking-wide text-[10px] mb-1">🩺 Recommended Treatments</p>
+            <p className="text-gray-700">{remedy.treatments}</p>
+          </div>
+          <p className="text-[9px] text-gray-400 italic">⚠️ Always consult a licensed healthcare professional before taking any medication.</p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const CrisisBanner: React.FC<{ resources: CrisisResource[] }> = ({ resources }) => (
+  <div className="mt-2 bg-red-50 border border-red-300 rounded-xl p-3">
+    <div className="flex items-center gap-2 text-red-700 font-semibold text-sm mb-2">
+      <AlertTriangle size={14} />
+      Immediate Crisis Support Resources
+    </div>
+    <div className="space-y-1">
+      {resources.map((r, i) => (
+        <div key={i} className="flex items-center gap-2 text-xs text-red-800">
+          <Phone size={11} />
+          <span className="font-medium">{r.name}:</span>
+          <span>{r.contact}</span>
+          <span className="text-red-500">({r.available})</span>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+// ── Clinical Report Panel ──────────────────────────────────────────────────
+const ClinicalReport: React.FC<{ report: PsychReport; fusionScore?: number }> = ({
+  report,
+  fusionScore,
+}) => {
+  const [expanded, setExpanded] = useState(false);
+  const risk = RISK_CONFIG[report.risk_classification] ?? RISK_CONFIG.MINIMAL;
+
+  return (
+    <div className="mt-2 border border-gray-200 rounded-xl overflow-hidden text-xs">
+      {/* Header row — always visible */}
+      <button
+        onClick={() => setExpanded((p) => !p)}
+        className="w-full flex items-center justify-between px-3 py-2 bg-gray-50 hover:bg-gray-100 transition-colors"
+      >
+        <div className="flex items-center gap-2">
+          <span className={`px-2 py-0.5 rounded-full font-semibold text-[10px] ${risk.bg} ${risk.color}`}>
+            {risk.label}
+          </span>
+          {report.service_degraded && (
+            <span className="px-2 py-0.5 rounded-full font-semibold text-[10px] bg-gray-200 text-gray-600">
+              Service Degraded
+            </span>
+          )}
+          {typeof fusionScore === "number" && (
+            <span className="text-gray-400">
+              Fusion: {(fusionScore * 100).toFixed(0)}%
+            </span>
+          )}
+          <span className="text-gray-400">
+            Confidence: {(report.confidence_score * 100).toFixed(0)}%
+          </span>
+        </div>
+        <span className="text-gray-400">
+          {expanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+        </span>
+      </button>
+
+      {/* Expanded section */}
+      {expanded && (
+        <div className="px-3 py-3 space-y-2.5 bg-white">
+          <div>
+            <p className="font-semibold text-gray-500 uppercase tracking-wide text-[10px]">
+              Emotional State
+            </p>
+            <p className="text-gray-700 mt-0.5">{report.emotional_state_summary}</p>
+          </div>
+
+          <div>
+            <p className="font-semibold text-gray-500 uppercase tracking-wide text-[10px]">
+              Behavioral Inference
+            </p>
+            <p className="text-gray-700 mt-0.5">{report.behavioral_inference}</p>
+          </div>
+
+          {report.cognitive_distortions.length > 0 && (
+            <div>
+              <p className="font-semibold text-gray-500 uppercase tracking-wide text-[10px]">
+                Cognitive Distortions
+              </p>
+              <div className="flex flex-wrap gap-1 mt-1">
+                {report.cognitive_distortions.map((d, i) => (
+                  <span
+                    key={i}
+                    className="px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded-full text-[10px]"
+                  >
+                    {d}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {report.suggested_interventions.length > 0 && (
+            <div>
+              <p className="font-semibold text-gray-500 uppercase tracking-wide text-[10px]">
+                Suggested Interventions
+              </p>
+              <ul className="mt-1 list-disc list-inside space-y-0.5 text-gray-700">
+                {report.suggested_interventions.map((s, i) => (
+                  <li key={i}>{s}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {report.crisis_triggered && report.crisis_resources && (
+            <CrisisBanner resources={report.crisis_resources} />
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ── Main ChatInterface ─────────────────────────────────────────────────────
 const ChatInterface: React.FC<ChatProps> = ({ currentEmotion, sessionId }) => {
-  const { user } = useAuth();
+  const { user, isLocalMode } = useAuth();
   const navigate = useNavigate();
   const [messages, setMessages] = useState<Message[]>([]);
   const [conversationId, setConversationId] = useState<string | null>(sessionId || null);
   const [createdDate, setCreatedDate] = useState<string>(new Date().toISOString());
-  
+
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -44,22 +215,39 @@ const ChatInterface: React.FC<ChatProps> = ({ currentEmotion, sessionId }) => {
     if (!user) return;
 
     const fetchMessages = async () => {
-      // 1. If we have a sessionId, fetch associated messages
+      // --- LOCAL MODE HISTORY ---
+      if (isLocalMode) {
+        if (sessionId) {
+          const localHistory = JSON.parse(localStorage.getItem('psypredict_local_history') || '{}');
+          const conv = localHistory[sessionId];
+          if (conv) {
+            setConversationId(sessionId);
+            setMessages(conv.messages || []);
+            setCreatedDate(conv.created_at);
+          } else {
+            navigate('/dashboard');
+          }
+        } else {
+          setMessages([]);
+          setConversationId(null);
+        }
+        return;
+      }
+
+      // --- SUPABASE MODE HISTORY ---
       if (sessionId) {
         setConversationId(sessionId);
-        
-        // Fetch conversation details for date AND verify ownership
         const { data: convData, error: convError } = await supabase
-           .from('conversations')
-           .select('created_at, user_id')
-           .eq('id', sessionId)
-           .eq('user_id', user.id) // Security: Ensure user owns this conversation
-           .single();
-           
+          .from('conversations')
+          .select('created_at, user_id')
+          .eq('id', sessionId)
+          .eq('user_id', user.id)
+          .single();
+
         if (convError || !convData) {
-            console.warn("Access denied or conversation not found.");
-            navigate('/history'); // Redirect if not found or not owned
-            return;
+          console.warn("Access denied or conversation not found.");
+          navigate('/history');
+          return;
         }
 
         if (convData) setCreatedDate((convData as { created_at: string }).created_at);
@@ -67,33 +255,33 @@ const ChatInterface: React.FC<ChatProps> = ({ currentEmotion, sessionId }) => {
         const { data, error } = await supabase
           .from('messages')
           .select('*')
-          .eq('conversation_id', sessionId) // Filter by session, not just user
+          .eq('conversation_id', sessionId)
           .order('created_at', { ascending: true });
 
         if (error) {
-             console.error('Error fetching messages:', error);
+          console.error('Error fetching messages:', error);
         } else if (data) {
-             const formatted: Message[] = (data as MessageRow[]).map((msg) => {
-                const meta = msg.metadata as Record<string, any> | null;
-                return {
-                     role: (meta?.role === 'assistant' ? 'assistant' : 'user') as "user" | "assistant",
-                     content: msg.content,
-                };
-             });
-             setMessages(formatted);
+          const formatted: Message[] = (data as MessageRow[]).map((msg) => {
+            const meta = msg.metadata as Record<string, any> | null;
+            return {
+              role: (meta?.role === 'assistant' ? 'assistant' : 'user') as "user" | "assistant",
+              content: msg.content,
+              report: meta?.report,
+              fusionScore: meta?.fusionScore
+            };
+          });
+          setMessages(formatted);
         }
       } else {
-         // No session ID -> New Chat Mode
-         // Reset messages
-         setMessages([]);
-         setConversationId(null);
+        setMessages([]);
+        setConversationId(null);
       }
     };
-    
+
     fetchMessages();
   }, [user, sessionId]);
 
-  // Auto-scroll (keep existing)
+  // Auto-scroll
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -105,76 +293,96 @@ const ChatInterface: React.FC<ChatProps> = ({ currentEmotion, sessionId }) => {
     setInput("");
     setIsLoading(true);
 
-    // Optimistic UI update
-    const userMsg = { role: "user" as const, content: userText };
+    const userMsg: Message = { role: "user", content: userText };
     setMessages((prev) => [...prev, userMsg]);
-
-
 
     try {
       // 0. Ensure Conversation Exists
       let activeConversationId = conversationId;
-      
+
       if (!activeConversationId) {
-         const { data: newConv, error: convError } = await supabase
-           .from('conversations')
-           .insert({
+        if (isLocalMode) {
+          activeConversationId = `local-${Date.now()}`;
+          setConversationId(activeConversationId);
+          // Initial save for local conv
+          const localHistory = JSON.parse(localStorage.getItem('psypredict_local_history') || '{}');
+          localHistory[activeConversationId] = {
+            id: activeConversationId,
+            title: `Local Chat ${new Date().toLocaleDateString()}`,
+            created_at: new Date().toISOString(),
+            messages: []
+          };
+          localStorage.setItem('psypredict_local_history', JSON.stringify(localHistory));
+        } else {
+          const { data: newConv, error: convError } = await supabase
+            .from('conversations')
+            .insert({
               user_id: user.id,
               title: `Chat on ${new Date().toLocaleDateString()}`
-           })
-           .select()
-           .single();
-           
-         if (convError || !newConv) {
-            throw new Error('Failed to create conversation');
-         }
-         
-         const conversation = newConv as ConversationRow;
-         activeConversationId = conversation.id;
-         setConversationId(conversation.id);
+            })
+            .select()
+            .single();
+
+          if (convError || !newConv) throw new Error('Failed to create conversation');
+          activeConversationId = (newConv as ConversationRow).id;
+          setConversationId(activeConversationId);
+        }
       }
 
-      // 1. Save User Message to DB
-      await supabase.from('messages').insert({
-        user_id: user.id,
-        conversation_id: activeConversationId,
-        content: userText,
-        metadata: { role: 'user', emotion: currentEmotion }, 
-        created_at: new Date().toISOString()
-      } as any);
+      // 1. Save User Message
+      if (isLocalMode) {
+        const localHistory = JSON.parse(localStorage.getItem('psypredict_local_history') || '{}');
+        if (localHistory[activeConversationId]) {
+          localHistory[activeConversationId].messages.push(userMsg);
+          localStorage.setItem('psypredict_local_history', JSON.stringify(localHistory));
+        }
+      } else {
+        await supabase.from('messages').insert({
+          user_id: user.id,
+          conversation_id: activeConversationId,
+          content: userText,
+          metadata: { role: 'user', emotion: currentEmotion },
+          created_at: new Date().toISOString()
+        } as any);
+      }
 
       // 2. Call AI API
-      // Note: we pass the updated local history including the new message
-      // We also include the welcome message in context if needed, but usually we just want last few.
-      // For simplicity, let's keep passing messages + userMsg.
-      
       const historyForApi = [...messages, userMsg];
       const result = await sendChatMessage(userText, currentEmotion, historyForApi);
-      
+
       const botContent = result.response;
-      const botMsg = {
-        role: "assistant" as const,
+      const botMsg: Message = {
+        role: "assistant",
         content: botContent,
+        report: result.report,
+        fusionScore: result.fusion_risk_score ?? undefined,
+        remedy: result.remedy ?? undefined,
       };
 
       setMessages((prev) => [...prev, botMsg]);
 
-      // 3. Save Assistant Message to DB
-      await supabase.from('messages').insert({
-        user_id: user.id,
-        conversation_id: activeConversationId,
-        content: botContent,
-        metadata: { role: 'assistant' },
-        created_at: new Date().toISOString()
-      } as any);
+      // 3. Save Assistant Message
+      if (isLocalMode) {
+        const localHistory = JSON.parse(localStorage.getItem('psypredict_local_history') || '{}');
+        if (localHistory[activeConversationId]) {
+          localHistory[activeConversationId].messages.push(botMsg);
+          localStorage.setItem('psypredict_local_history', JSON.stringify(localHistory));
+        }
+      } else {
+        await supabase.from('messages').insert({
+          user_id: user.id,
+          conversation_id: activeConversationId,
+          content: botContent,
+          metadata: { role: 'assistant', report: result.report, fusionScore: result.fusion_risk_score },
+          created_at: new Date().toISOString()
+        } as any);
+      }
 
     } catch (error) {
       console.error("Chat failed:", error);
-      const errorMsg = "I'm having trouble connecting right now.";
-      
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: errorMsg },
+        { role: "assistant", content: "I'm having trouble connecting right now. Please try again." },
       ]);
     } finally {
       setIsLoading(false);
@@ -183,7 +391,7 @@ const ChatInterface: React.FC<ChatProps> = ({ currentEmotion, sessionId }) => {
 
   return (
     <div className="flex flex-col h-full bg-white overflow-hidden min-w-0 relative">
-      {/* PDF Download Button (Absolute Top Right) */}
+      {/* PDF Download Button */}
       <div className="absolute top-4 right-6 z-10">
         <button
           onClick={() => generateChatPDF([WELCOME_MESSAGE, ...messages], createdDate)}
@@ -200,9 +408,8 @@ const ChatInterface: React.FC<ChatProps> = ({ currentEmotion, sessionId }) => {
         {[WELCOME_MESSAGE, ...messages].map((msg, index) => (
           <div
             key={index}
-            className={`flex w-full min-w-0 items-end gap-2 ${
-              msg.role === "user" ? "justify-end" : "justify-start"
-            }`}
+            className={`flex w-full min-w-0 items-end gap-2 ${msg.role === "user" ? "justify-end" : "justify-start"
+              }`}
           >
             {/* Bot Icon */}
             {msg.role === "assistant" && (
@@ -211,26 +418,37 @@ const ChatInterface: React.FC<ChatProps> = ({ currentEmotion, sessionId }) => {
               </div>
             )}
 
-            {/* Message Bubble */}
-            <div
-              className={`
-                max-w-[80%]
-                w-fit
-                min-w-0
-                p-3
-                text-sm
-                shadow-sm
-                wrap-break-word
-                whitespace-pre-wrap
-                overflow-hidden
-                ${
-                  msg.role === "user"
-                    ? "bg-indigo-600 text-white rounded-2xl rounded-br-none"
+            {/* Message Bubble + Clinical Report */}
+            <div className="max-w-[80%] min-w-0 flex flex-col">
+              <div
+                className={`
+                  w-fit min-w-0 p-3 text-sm shadow-sm whitespace-pre-wrap overflow-hidden
+                  ${msg.role === "user"
+                    ? "bg-indigo-600 text-white rounded-2xl rounded-br-none ml-auto"
                     : "bg-white text-gray-800 border border-gray-200 rounded-2xl rounded-bl-none"
-                }
-              `}
-            >
-              {msg.content}
+                  }
+                `}
+              >
+                {msg.content}
+              </div>
+
+              {/* Clinical Report Panel (assistant messages with report only) */}
+              {msg.role === "assistant" && msg.report && (
+                <ClinicalReport report={msg.report} fusionScore={msg.fusionScore} />
+              )}
+
+              {/* Remedy Panel (only on assistant messages with remedy data) */}
+              {msg.role === "assistant" && msg.remedy && (
+                <RemedyPanel remedy={msg.remedy} />
+              )}
+
+              {/* Crisis banner at message level if critical & not yet shown in report */}
+              {msg.role === "assistant" &&
+                msg.report?.crisis_triggered &&
+                msg.report.crisis_resources &&
+                !msg.report.crisis_resources.length && (
+                  <CrisisBanner resources={msg.report.crisis_resources} />
+                )}
             </div>
 
             {/* User Icon */}
@@ -244,7 +462,7 @@ const ChatInterface: React.FC<ChatProps> = ({ currentEmotion, sessionId }) => {
 
         {isLoading && (
           <div className="text-xs text-gray-400 ml-2">
-            PsyPredict is thinking...
+            PsyPredict is analyzing...
           </div>
         )}
 

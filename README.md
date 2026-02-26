@@ -1,139 +1,187 @@
-# 🧠 **PsyPredict**
-> *AI-Augmented Multi-Modal Mental Health Assistance System*
+# 🧠 PsyPredict v2.0
+> *Production-Grade Multimodal Clinical AI System*
 
-![License](https://img.shields.io/badge/license-MIT-blue.svg) ![Status](https://img.shields.io/badge/status-active-success.svg) ![Python](https://img.shields.io/badge/backend-python-yellow.svg) ![React](https://img.shields.io/badge/frontend-react-cyan.svg) ![Vercel](https://img.shields.io/badge/frontend-Vercel-black) ![HuggingFace](https://img.shields.io/badge/backend-Hugging%20Face-yellow)
-
-
----
-
-## **📖 Overview**
-
-**PsyPredict** is an advanced mental-health assistance system designed to understand a user’s emotional state through **facial expression analysis** and **text interpretation**. 
-
-Unlike standard chatbots, PsyPredict combines computer vision with a therapeutic LLM engine to provide accessible, culturally meaningful, and personalized support. It integrates modern AI techniques with traditional wisdom, offering guidance inspired by the **Bhagavad Gita**.
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Status](https://img.shields.io/badge/status-active-success.svg)
+![Python](https://img.shields.io/badge/backend-FastAPI-009688.svg)
+![React](https://img.shields.io/badge/frontend-React-cyan.svg)
+![LLaMA](https://img.shields.io/badge/LLM-LLaMA%203%20%28Ollama%29-orange.svg)
+![Vercel](https://img.shields.io/badge/frontend-Vercel-black)
 
 ---
 
-## ✨ **Key Features**
+## Overview
 
-### **1. Multi-Modal Emotion Understanding**
-* **Facial Analysis:** Detects live emotions (sadness, anger, fear, stress, confusion) using Computer Vision.
-* **Text Analysis:** Interprets emotional tone, symptoms, and behavioral patterns from user text.
-* **Fusion Logic:** Combines visual and textual data for a highly accurate emotional profile.
+**PsyPredict v2.0** is a fully local, production-grade multimodal mental health AI system. It combines:
 
-### **2. Therapeutic AI Engine**
-* **Powered by Google Gemini 2.0 Flash:** A fast, empathetic reasoning engine that acts as a compassionate companion.
-* **Context Aware:** Remembers session history and tracks emotional trends over time.
-* **Safety First:** Detects crisis keywords and routes to emergency resources when necessary.
+- **DistilBERT** multi-label text emotion classification
+- **LLaMA 3** via Ollama for structured clinical reasoning (no external API)
+- **Keras CNN** facial emotion detection (live webcam)
+- **Zero-shot NLI** crisis detection with automatic override
+- **Weighted multimodal fusion** for a combined distress risk score
 
-### **3. Bhagavad Gita–Based Remedy System**
-* Translates ancient shlokas into simple, story-based psychological guidance.
-* Provides culturally grounded advice that feels human and comforting, not robotic.
-
-### **4. Interactive Dashboard**
-* Real-time emotion tracking graph.
-* Personalized non-prescriptive lifestyle recommendations.
+Every AI response returns a structured **PsychReport** — not a generic chatbot reply.
 
 ---
 
-## 🧩 **System Architecture**
+## Key Features
 
-```mermaid
-graph TD;
-    A[User] -->|Webcam Video| B(Facial Emotion Model);
-    A -->|Chat Text| C(Text Analysis);
-    B --> D{Fusion Engine};
-    C --> D;
-    D -->|Context + Emotion| E[LLM Therapist];
-    E -->|Personalized Response| A;
-````
+### 1. Multimodal Emotion Understanding
+- **Facial Analysis:** Keras CNN detects live emotions via webcam (7 classes)
+- **Text Analysis:** DistilBERT classifies multi-label emotions from user text
+- **Weighted Fusion:** `(Text × 0.65) + (Face × 0.35)` → unified distress score
 
-*(Or using the text-based version below)*
+### 2. Clinical-Grade Output (PsychReport)
+Every chat response includes:
+- `risk_classification` — MINIMAL / LOW / MODERATE / HIGH / CRITICAL
+- `emotional_state_summary` — concise, grounded assessment
+- `behavioral_inference` — inferred patterns from conversation
+- `cognitive_distortions` — CBT distortion labels detected
+- `suggested_interventions` — clinically actionable recommendations
+- `confidence_score` — LLM self-assessed confidence
+
+### 3. Crisis Detection Layer
+- Zero-shot NLI classification across 5 risk dimensions (NOT keyword matching)
+- Weighted risk scoring — triggers at configurable threshold (default: 0.65)
+- **Overrides LLM** — deterministic crisis response with emergency hotlines (iCall, Vandrevala, AASRA)
+
+### 4. Bhagavad Gita Remedy System
+- CSV-based remedy lookup for mental conditions
+- Culturally grounded story-based guidance
+
+### 5. Production Hardened
+- Input sanitization (HTML strip, 2000-char limit)
+- Retry with exponential backoff on Ollama failures
+- Graceful fallback when Ollama unreachable
+- Rate limiting (30 req/min)
+- Structured logging
+- Pydantic validation on all I/O
+- Context window trimming (last 10 turns)
+
+---
+
+## System Architecture
 
 ```
-PsyPredict
-│
-├── Facial Emotion Module (CV)
-│     ├── Live video capture
-│     └── Emotion classification (CNN)
-│
-├── Therapist Engine (LLM)
-│     ├── Powered by Gemini 2.0 Flash
-│     ├── Bhagavad Gita Knowledge Base
-│     └── Context Management
-│
-└── Frontend Interface
-      ├── React + Vite
-      └── Real-time Visualization
+User Text Input
+      │
+      ├─► DistilBERT Text Emotion Classifier
+      │       └─► emotion labels + confidence
+      │
+      ├─► Crisis Engine (Zero-Shot NLI)
+      │       └─► weighted risk score
+      │               ├─ score ≥ 0.65 → CRISIS OVERRIDE (no LLM)
+      │               └─ ELSE → continue
+      │
+      ├─► Multimodal Fusion Engine
+      │       ├─ text_distress × 0.65
+      │       └─ face_distress × 0.35 → final_risk_score
+      │
+      └─► Ollama / LLaMA 3 (local, structured JSON)
+              └─► PsychReport (Pydantic validated)
+
+Webcam → Keras CNN → face emotion score → Fusion Engine
 ```
 
------
+---
 
-## 🛠️ **Tech Stack**
+## Tech Stack
 
 | Component | Technology |
-| :--- | :--- |
+|-----------|-----------|
 | **Frontend** | React, Vite, TypeScript, TailwindCSS |
-| **Backend** | Python (Flask/FastAPI) |
-| **AI / LLM** | **Google Gemini 2.0 Flash**, LangChain |
-| **CV Model** | OpenCV, DeepFace / Custom CNN |
+| **Backend** | Python, FastAPI, Uvicorn |
+| **LLM** | LLaMA 3 via Ollama (local, no external API) |
+| **Text Emotion** | DistilBERT (`bhadresh-savani/distilbert-base-uncased-emotion`) |
+| **Crisis Detection** | MiniLM Zero-Shot NLI |
+| **Face Emotion** | OpenCV + Custom Keras CNN |
+| **Database** | Supabase (conversation history) |
+| **Remedies** | Pandas + CSV knowledge base |
 
------
+---
 
-## 📂 **Folder Structure**
+## Folder Structure
 
-```bash
+```
 PsyPredict/
 ├── backend/
-│   ├── llm_engine.py    # Gemini 2.0 Integration
-│   ├── app.py           # API Entry point
-│   ├── models/          # Emotion detection models
-│   └── .env             # API Keys (Google AI Studio)
+│   ├── app/
+│   │   ├── main.py                    # FastAPI app + lifespan
+│   │   ├── config.py                  # Pydantic Settings
+│   │   ├── schemas.py                 # PsychReport + all API models
+│   │   ├── ml_assets/
+│   │   │   ├── emotion_model_trained.h5
+│   │   │   ├── haarcascade_frontalface_default.xml
+│   │   │   └── MEDICATION.csv
+│   │   ├── services/
+│   │   │   ├── ollama_engine.py       # LLaMA 3 async client
+│   │   │   ├── text_emotion_engine.py # DistilBERT text emotion
+│   │   │   ├── crisis_engine.py       # Zero-shot NLI crisis detection
+│   │   │   ├── fusion_engine.py       # Multimodal weighted fusion
+│   │   │   ├── emotion_engine.py      # Keras CNN face emotion
+│   │   │   └── remedy_engine.py       # CSV remedy lookup
+│   │   └── api/endpoints/
+│   │       ├── therapist.py           # POST /api/chat
+│   │       ├── facial.py              # POST /api/predict/emotion
+│   │       ├── remedies.py            # GET  /api/get_advice
+│   │       └── analysis.py            # POST /api/analyze/text
+│   ├── requirements.txt
+│   └── .env.example
 ├── frontend/
 │   ├── src/
-│   │   ├── components/  # Chat & Camera UI
-│   │   └── hooks/       # Custom React Hooks
+│   │   ├── components/features/
+│   │   │   ├── ChatInterface.tsx      # Chat + Clinical Report panel
+│   │   │   ├── WebcamFeed.tsx         # Live webcam emotion feed
+│   │   │   └── RemedyCard.tsx         # Gita remedy display
+│   │   ├── services/api.ts            # Typed API client
+│   │   └── pages/
+│   │       ├── Dashboard.tsx
+│   │       └── History.tsx
 │   └── package.json
-└── README.md
+└── TO RUN .md
 ```
 
------
+---
 
-## 🚀 **Getting Started**
+## Getting Started
 
-### **1. Clone the Repository**
+### Prerequisites (one-time)
 
 ```bash
-git clone https://github.com/therandomuser03/psypredict.git
-cd psypredict
+# Install Ollama
+winget install Ollama.Ollama   # Windows
+# or: brew install ollama       # macOS
+
+# Pull LLaMA 3 model (~4.7 GB)
+ollama pull llama3
+
+# Verify
+ollama list
 ```
 
-### **2. Backend Setup**
-
-Navigate to the backend folder and install dependencies:
+### Backend Setup
 
 ```bash
 cd backend
-# Create virtual environment (optional but recommended)
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
 
-# Install requirements
+# Activate virtualenv (recommended)
+python -m venv venv
+venv\Scripts\Activate        # Windows
+# source venv/bin/activate   # macOS/Linux
+
+# Install dependencies (DistilBERT auto-downloads ~250 MB on first run)
 pip install -r requirements.txt
 
-# Setup Environment Variables
-# Create a .env file and add: GOOGLE_API_KEY=your_key_here
+# Copy and review config
+copy .env.example .env
+
+# Start backend
+uvicorn app.main:app --host 0.0.0.0 --port 7860 --reload
 ```
 
-Run the server:
+Swagger UI: **http://localhost:7860/docs**
 
-```bash
-python app.py
-```
-
-### **3. Frontend Setup**
-
-Open a new terminal for the frontend:
+### Frontend Setup
 
 ```bash
 cd frontend
@@ -141,35 +189,61 @@ npm install
 npm run dev
 ```
 
-Access the app at `http://localhost:5173`.
+App: **http://localhost:5173**
 
------
+### Keep Ollama Running
 
-## 🌍 **Deployment**
+```bash
+# In a separate terminal (if not running as a service)
+ollama serve
+```
 
-The project is deployed using a modern cloud-based setup:
+---
 
-- **Frontend:** Deployed on **Vercel**  
-  👉 https://psypredict.vercel.app
+## API Endpoints
 
-- **Backend:** Deployed on **Hugging Face Spaces**  
-  👉 https://huggingface.co/spaces/therandomuser03/psypredict-backend
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/api/chat` | Full clinical pipeline → `PsychReport` |
+| `POST` | `/api/predict/emotion` | Facial emotion detection |
+| `GET`  | `/api/get_advice?condition=` | Remedy lookup |
+| `POST` | `/api/analyze/text` | Text emotion + crisis pre-screen |
+| `GET`  | `/api/health` | System health (Ollama + DistilBERT) |
 
-This separation ensures fast global delivery of the UI while leveraging Hugging Face’s optimized infrastructure for AI model inference.
+---
 
------
+## Configuration (`.env`)
 
-## ⚠️ **Disclaimer**
+```env
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=llama3
+OLLAMA_TIMEOUT_S=90
+DISTILBERT_MODEL=bhadresh-savani/distilbert-base-uncased-emotion
+CRISIS_THRESHOLD=0.65
+TEXT_WEIGHT=0.65
+FACE_WEIGHT=0.35
+MAX_CONTEXT_TURNS=10
+LOG_LEVEL=INFO
+RATE_LIMIT=30/minute
+```
 
-> **Important:** This system is intended for **emotional support and educational purposes only**. It does **not** provide medical diagnosis or professional therapy. If you or someone you know is in crisis, please contact emergency services or a licensed mental health professional immediately.
+---
 
------
+## Deployment
 
-## 🤝 **Contributing**
+- **Frontend:** [Vercel](https://psypredict.vercel.app)
+- **Backend (v2.0):** Requires a machine with Ollama installed — Hugging Face Spaces or any VM with Docker + GPU recommended
 
-Contributions are welcome\! Please fork the repo and submit a pull request.
+---
 
-## 📄 **License**
+## Disclaimer
 
-This project is licensed under the **MIT License**.  
-See the full license text here: **[LICENSE](./LICENSE)**.
+> This system is a **clinical decision-support tool** for emotional support and educational purposes only. It does **not** provide medical diagnosis or professional therapy. If you or someone you know is in crisis, please contact emergency services or a licensed mental health professional immediately.
+>
+> **India crisis lines:** iCall: 9152987821 | Vandrevala: 1860-2662-345 | AASRA: 9820466627
+
+---
+
+## License
+
+MIT License — see [LICENSE](./LICENSE)

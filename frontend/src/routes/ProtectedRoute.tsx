@@ -4,7 +4,7 @@ import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
 import { motion } from 'framer-motion';
-import { Github } from 'lucide-react';
+import { Github, AlertTriangle } from 'lucide-react';
 
 export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
@@ -34,7 +34,7 @@ export const Login: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, enterLocalMode, supabaseError } = useAuth();
 
   React.useEffect(() => {
     if (user) navigate('/dashboard');
@@ -82,26 +82,26 @@ export const Login: React.FC = () => {
 
         // Fallback: Manually insert profile if trigger failed or didn't fire
         if (authData.user) {
-           const hashedPassword = await hashPassword(password);
-           
-           const { error: profileError } = await supabase
-             .from('profiles')
-             .insert({
-               id: authData.user.id,
-               full_name: fullName,
-               email: email,
-               updated_at: new Date().toISOString(),
-               password_hash: hashedPassword, // Storing hashed password
-             })
-             .select()
-             .single();
-           
-           // Ignore duplicate key error (if trigger worked)
-           if (profileError && profileError.code !== '23505') {
-              console.error("Manual profile creation failed:", profileError);
-              // ALERT USER for debugging
-              alert(`Profile creation failed: ${profileError.message} (Code: ${profileError.code})`);
-           }
+          const hashedPassword = await hashPassword(password);
+
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .insert({
+              id: authData.user.id,
+              full_name: fullName,
+              email: email,
+              updated_at: new Date().toISOString(),
+              password_hash: hashedPassword, // Storing hashed password
+            })
+            .select()
+            .single();
+
+          // Ignore duplicate key error (if trigger worked)
+          if (profileError && profileError.code !== '23505') {
+            console.error("Manual profile creation failed:", profileError);
+            // ALERT USER for debugging
+            alert(`Profile creation failed: ${profileError.message} (Code: ${profileError.code})`);
+          }
         }
 
         // Auto login usually happens on signup with Supabase
@@ -130,7 +130,7 @@ export const Login: React.FC = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="max-w-md w-full bg-white rounded-3xl shadow-xl overflow-hidden"
@@ -142,19 +142,36 @@ export const Login: React.FC = () => {
               {isLogin ? 'Welcome Back' : 'Create Account'}
             </h2>
             <p className="text-gray-500 mt-2 text-sm">
-              {isLogin 
-                ? 'Enter your credentials to access your dashboard' 
+              {isLogin
+                ? 'Enter your credentials to access your dashboard'
                 : 'Join PsyPredict to start your journey'}
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {error && (
-              <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm text-center">
-                {error}
+            {(error || supabaseError) && (
+              <div className="bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-2xl text-sm flex flex-col gap-3 shadow-sm animate-in fade-in slide-in-from-top-2">
+                <div className="flex items-start gap-3">
+                  <div className="bg-amber-100 p-1.5 rounded-lg shrink-0">
+                    <AlertTriangle size={18} className="text-amber-600" />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="font-bold leading-tight">Connection Issue Detected</span>
+                    <span className="text-amber-700/80 text-xs leading-relaxed">
+                      {supabaseError || error}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => enterLocalMode()}
+                  className="w-full bg-amber-600/10 hover:bg-amber-600/20 text-amber-700 py-2.5 rounded-xl font-bold text-xs transition-colors border border-amber-600/20"
+                >
+                  Switch to Offline Mode (Guest) →
+                </button>
               </div>
             )}
-            
+
             {!isLogin && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
@@ -264,12 +281,19 @@ export const Login: React.FC = () => {
             </div>
           </form>
 
-          <div className="mt-6 text-center">
+          <div className="mt-6 flex flex-col items-center gap-3">
             <button
               onClick={() => setIsLogin(!isLogin)}
               className="text-sm text-indigo-600 hover:text-indigo-800 font-medium"
             >
               {isLogin ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
+            </button>
+            <div className="w-16 border-t border-gray-200"></div>
+            <button
+              onClick={() => enterLocalMode()}
+              className="text-xs text-gray-400 hover:text-indigo-600 transition-colors uppercase tracking-widest font-bold"
+            >
+              Run In Offline Mode
             </button>
           </div>
         </div>

@@ -1,25 +1,58 @@
 import os
-import gdown # We will install this library
+import gdown
+from huggingface_hub import hf_hub_download
 
-# 👇 PASTE YOUR GOOGLE DRIVE IDs HERE
-MODEL_ID = "10GWSogJNKlPlTeWtJkDq_zc4roB1Vmnu"
-CSV_ID   = "1bJ8C1BY0rvPNKuWcBgqiUtiSzHziZokH"
+# --- Assets ---
+MODEL_ID = "10GWSogJNKlPlTeWtJkDq_zc4roB1Vmnu" # Keras Face Emotion
+CSV_ID   = "1bJ8C1BY0rvPNKuWcBgqiUtiSzHziZokH" # Medication CSV
 
-# Define where they should go
-model_path = "app/ml_assets/emotion_model_trained.h5"
-csv_path   = "app/ml_assets/MEDICATION.csv"
+# Llama-3-8B-Instruct GGUF (Quantized for CPU/RAM efficiency)
+LLAMA_REPO = "MaziyarPanahi/Llama-3-8B-Instruct-v0.1-GGUF"
+LLAMA_FILE = "Llama-3-8B-Instruct-v0.1.Q4_K_M.gguf"
 
-def download_file(file_id, output_path):
+# Destinations
+ML_ASSETS = "app/ml_assets"
+FACE_MODEL_PATH = os.path.join(ML_ASSETS, "emotion_model_trained.h5")
+MEDS_CSV_PATH = os.path.join(ML_ASSETS, "MEDICATION.csv")
+LLAMA_GGUF_PATH = os.path.join(ML_ASSETS, "llama-3-8b-instruct.Q4_K_M.gguf")
+
+def download_drive_file(file_id, output_path):
     if not os.path.exists(output_path):
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
         url = f'https://drive.google.com/uc?id={file_id}'
-        print(f"⬇️ Downloading {output_path}...")
+        print(f"⬇️ Downloading Drive file to {output_path}...")
         gdown.download(url, output_path, quiet=False)
     else:
-        print(f"✅ Found {output_path}, skipping download.")
+        print(f"✅ Found {output_path}, skipping.")
+
+def download_hf_model(repo_id, filename, output_path):
+    if not os.path.exists(output_path):
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        print(f"⬇️ Downloading HF model: {filename} from {repo_id}...")
+        hf_hub_download(
+            repo_id=repo_id,
+            filename=filename,
+            local_dir=os.path.dirname(output_path),
+            local_dir_use_symlinks=False
+        )
+        # Rename to match our config expectation
+        downloaded_path = os.path.join(os.path.dirname(output_path), filename)
+        if downloaded_path != output_path:
+            os.rename(downloaded_path, output_path)
+    else:
+        print(f"✅ Found {output_path}, skipping.")
 
 if __name__ == "__main__":
-    print("🚀 Starting Model Download...")
-    download_file(MODEL_ID, model_path)
-    download_file(CSV_ID, csv_path)
-    print("✅ All models ready!")
+    print("🚀 Starting Production Model Sync...")
+    
+    # 1. Drive Files
+    download_drive_file(MODEL_ID, FACE_MODEL_PATH)
+    download_drive_file(CSV_ID, MEDS_CSV_PATH)
+    
+    # 2. HF Models (Llama 3)
+    try:
+        download_hf_model(LLAMA_REPO, LLAMA_FILE, LLAMA_GGUF_PATH)
+    except Exception as e:
+        print(f"⚠️ HF Download failed (expected on local dev if no internet): {e}")
+        
+    print("✅ All models synchronized!")

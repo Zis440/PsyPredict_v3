@@ -24,7 +24,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:5000', // Your Flask Backend URL
+        target: 'http://localhost:7860', // FastAPI Backend (v2.0)
         changeOrigin: true,
         secure: false,
       }
