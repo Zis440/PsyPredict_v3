@@ -1,4 +1,4 @@
-# 🧠 PsyPredict v2.0
+# 🧠 PsyPredict
 > *Production-Grade Multimodal Clinical AI System*
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
@@ -12,7 +12,7 @@
 
 ## Overview
 
-**PsyPredict v2.0** is a fully local, production-grade multimodal mental health AI system. It combines:
+**PsyPredict** is a fully local, production-grade multimodal mental health AI system. It combines:
 
 - **DistilBERT** multi-label text emotion classification
 - **LLaMA 3** via Ollama for structured clinical reasoning (no external API)
@@ -138,7 +138,7 @@ PsyPredict/
 │   │       ├── Dashboard.tsx
 │   │       └── History.tsx
 │   └── package.json
-└── TO RUN .md
+└── INSTRUCTIONS.md
 ```
 
 ---
@@ -232,7 +232,7 @@ RATE_LIMIT=30/minute
 ## Deployment
 
 - **Frontend:** [Vercel](https://psypredict.vercel.app)
-- **Backend (v2.0):** Requires a machine with Ollama installed — Hugging Face Spaces or any VM with Docker + GPU recommended
+- **Backend:** Requires a machine with Ollama installed — Hugging Face Spaces or any VM with Docker + GPU recommended
 
 ---
 
@@ -247,3 +247,7 @@ RATE_LIMIT=30/minute
 ## License
 
 MIT License — see [LICENSE](./LICENSE)
+
+---
+
+Built by [@Zis440](https://github.com/Zis440), [@therandomuser03](https://github.com/therandomuser03) & [@SanjanaChatterjee](https://github.com/SanjanaChatterjee)

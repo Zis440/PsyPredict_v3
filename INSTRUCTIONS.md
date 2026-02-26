@@ -1,4 +1,4 @@
-# PsyPredict v2.0 — Quick Start
+# PsyPredict — Quick Start
 
 ## Prerequisites (one-time)
 

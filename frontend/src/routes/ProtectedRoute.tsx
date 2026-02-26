@@ -13,7 +13,10 @@ export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ childr
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin text-4xl">🧠</div>
+        <div className="relative">
+          <div className="text-6xl">🧠</div>
+          <div className="absolute bottom-0 right-0 w-4 h-4 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin"></div>
+        </div>
       </div>
     );
   }
