@@ -1,15 +1,21 @@
-
 import React, { createContext, useEffect, useState } from 'react';
-import type { Session, User } from '@supabase/supabase-js';
-import { supabase } from '../lib/supabase';
+import { useConvexAuth } from "convex/react";
+import { useAuthActions } from "@convex-dev/auth/react";
+import { useQuery } from "convex/react";
+import { api } from "../../convex/_generated/api";
+
+interface UserInfo {
+  id: string;
+  email: string | null;
+  fullName: string | null;
+  avatarUrl: string | null;
+}
 
 interface AuthContextType {
-  session: Session | null;
-  user: User | null;
+  user: UserInfo | null;
   loading: boolean;
   isLocalMode: boolean;
-  supabaseError: string | null;
-  signInWithEmail: (email: string) => Promise<any>;
+  authError: string | null;
   signOut: () => Promise<void>;
   enterLocalMode: () => void;
 }
@@ -17,69 +23,61 @@ interface AuthContextType {
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [session, setSession] = useState<Session | null>(null);
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { isAuthenticated, isLoading: convexLoading } = useConvexAuth();
+  const { signOut: convexSignOut } = useAuthActions();
+
+  const [user, setUser] = useState<UserInfo | null>(null);
   const [isLocalMode, setIsLocalMode] = useState(() => {
     return localStorage.getItem('psypredict_local_mode') === 'true';
   });
-  const [supabaseError, setSupabaseError] = useState<string | null>(null);
+  const [authError, setAuthError] = useState<string | null>(null);
 
+  // Fetch the user profile from Convex when authenticated
+  const profile = useQuery(
+    api.users.currentUser,
+    isAuthenticated && !isLocalMode ? {} : "skip"
+  );
+
+  // Handle local mode
   useEffect(() => {
-    // Check if we are in local mode first
     if (isLocalMode) {
-      setUser({ id: 'local-guest', email: 'guest@psypredict.local', user_metadata: { full_name: 'Local Guest' } } as any);
-      setLoading(false);
-      return;
-    }
-
-    // Try Supabase Auth
-    const authTimeout = setTimeout(() => {
-      if (loading) {
-        setSupabaseError("Supabase connection timed out. The cloud project might be paused.");
-      }
-    }, 10000); // 10s timeout
-
-    try {
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        clearTimeout(authTimeout);
-        if (session) {
-          setSession(session);
-          setUser(session.user);
-        }
-        setLoading(false);
-      }).catch(err => {
-        clearTimeout(authTimeout);
-        console.warn("Supabase session check failed (expected if offline/paused):", err);
-        setSupabaseError("Could not connect to Supabase Cloud.");
-        setLoading(false);
+      setUser({
+        id: 'local-guest',
+        email: 'guest@psypredict.local',
+        fullName: 'Local Guest',
+        avatarUrl: null,
       });
-
-      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
-      });
-
-      return () => {
-        clearTimeout(authTimeout);
-        subscription.unsubscribe();
-      };
-    } catch (err) {
-      clearTimeout(authTimeout);
-      console.error("Auth init error:", err);
-      setSupabaseError("Auth initialization failed.");
-      setLoading(false);
+      setAuthError(null);
     }
   }, [isLocalMode]);
+
+  // Handle Convex auth state
+  useEffect(() => {
+    if (isLocalMode) return;
+
+    if (isAuthenticated && profile) {
+      setUser({
+        id: profile.userId,
+        email: profile.email ?? null,
+        fullName: profile.fullName ?? null,
+        avatarUrl: profile.avatarUrl ?? null,
+      });
+      setAuthError(null);
+    } else if (!isAuthenticated && !convexLoading) {
+      setUser(null);
+    }
+  }, [isAuthenticated, profile, convexLoading, isLocalMode]);
 
   const enterLocalMode = () => {
     setIsLocalMode(true);
     localStorage.setItem('psypredict_local_mode', 'true');
-    setUser({ id: 'local-guest', email: 'guest@psypredict.local', user_metadata: { full_name: 'Local Guest' } } as any);
+    setUser({
+      id: 'local-guest',
+      email: 'guest@psypredict.local',
+      fullName: 'Local Guest',
+      avatarUrl: null,
+    });
   };
-
-  const signInWithEmail = async (_email: string) => { return; };
 
   const signOut = async () => {
     if (isLocalMode) {
@@ -87,17 +85,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.removeItem('psypredict_local_mode');
       setUser(null);
     } else {
-      await supabase.auth.signOut();
+      await convexSignOut();
+      setUser(null);
     }
   };
 
+  const loading = isLocalMode ? false : convexLoading;
+
   const value = {
-    session,
     user,
     loading,
     isLocalMode,
-    supabaseError,
-    signInWithEmail,
+    authError,
     signOut,
     enterLocalMode,
   };

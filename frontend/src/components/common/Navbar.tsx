@@ -54,7 +54,7 @@ const Navbar: React.FC = () => {
             <div className="flex items-center gap-3">
               <div className="hidden lg:block text-right">
                 <p className="text-sm font-medium text-gray-900 leading-none">
-                  {user?.user_metadata?.full_name || 'User'}
+                  {user?.fullName || 'User'}
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
                   {user?.email}
@@ -119,7 +119,7 @@ const Navbar: React.FC = () => {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-900 truncate">
-                      {user?.user_metadata?.full_name || 'User'}
+                      {user?.fullName || 'User'}
                     </p>
                     <p className="text-xs text-gray-500 truncate">
                       {user?.email}

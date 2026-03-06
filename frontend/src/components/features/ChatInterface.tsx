@@ -1,14 +1,15 @@
 // src/components/features/ChatInterface.tsx
 // Upgraded: Displays structured PsychReport (clinical report panel) below each AI response.
-// All existing chat UI, Supabase session logic, and PDF export preserved.
+// Convex-powered: Uses Convex queries/mutations for conversation and message persistence.
 
 import React, { useState, useRef, useEffect } from "react";
 import { sendChatMessage } from "../../services/api";
 import type { PsychReport, CrisisResource, RemedyData } from "../../services/api";
 import { Bot, User, FileText, ChevronDown, ChevronUp, AlertTriangle, Phone } from "lucide-react";
-import { supabase } from "../../lib/supabase";
 import { useAuth } from "../../hooks/useAuth";
-import type { Database } from "../../types/supabase";
+import { useMutation, useQuery } from "convex/react";
+import { api } from "../../../convex/_generated/api";
+import type { Id } from "../../../convex/_generated/dataModel";
 import { generateChatPDF } from "../../utils/pdfUtils";
 import { useNavigate } from "react-router-dom";
 
@@ -24,9 +25,6 @@ interface ChatProps {
   currentEmotion: string;
   sessionId?: string;
 }
-
-type MessageRow = Database['public']['Tables']['messages']['Row'];
-type ConversationRow = Database['public']['Tables']['conversations']['Row'];
 
 const WELCOME_MESSAGE: Message = {
   role: "assistant",
@@ -210,76 +208,72 @@ const ChatInterface: React.FC<ChatProps> = ({ currentEmotion, sessionId }) => {
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Fetch messages on load
+  // Convex mutations
+  const createConversation = useMutation(api.conversations.create);
+  const createMessage = useMutation(api.messages.create);
+
+  // Convex queries (only used when NOT in local mode and we have a sessionId)
+  const convexConversation = useQuery(
+    api.conversations.get,
+    !isLocalMode && sessionId ? { id: sessionId as Id<"conversations"> } : "skip"
+  );
+  const convexMessages = useQuery(
+    api.messages.listByConversation,
+    !isLocalMode && sessionId ? { conversationId: sessionId as Id<"conversations"> } : "skip"
+  );
+
+  // Load messages from Convex or localStorage
   useEffect(() => {
     if (!user) return;
 
-    const fetchMessages = async () => {
-      // --- LOCAL MODE HISTORY ---
-      if (isLocalMode) {
-        if (sessionId) {
-          const localHistory = JSON.parse(localStorage.getItem('psypredict_local_history') || '{}');
-          const conv = localHistory[sessionId];
-          if (conv) {
-            setConversationId(sessionId);
-            setMessages(conv.messages || []);
-            setCreatedDate(conv.created_at);
-          } else {
-            navigate('/dashboard');
-          }
-        } else {
-          setMessages([]);
-          setConversationId(null);
-        }
-        return;
-      }
-
-      // --- SUPABASE MODE HISTORY ---
+    if (isLocalMode) {
       if (sessionId) {
-        setConversationId(sessionId);
-        const { data: convData, error: convError } = await supabase
-          .from('conversations')
-          .select('created_at, user_id')
-          .eq('id', sessionId)
-          .eq('user_id', user.id)
-          .single();
-
-        if (convError || !convData) {
-          console.warn("Access denied or conversation not found.");
-          navigate('/history');
-          return;
-        }
-
-        if (convData) setCreatedDate((convData as { created_at: string }).created_at);
-
-        const { data, error } = await supabase
-          .from('messages')
-          .select('*')
-          .eq('conversation_id', sessionId)
-          .order('created_at', { ascending: true });
-
-        if (error) {
-          console.error('Error fetching messages:', error);
-        } else if (data) {
-          const formatted: Message[] = (data as MessageRow[]).map((msg) => {
-            const meta = msg.metadata as Record<string, any> | null;
-            return {
-              role: (meta?.role === 'assistant' ? 'assistant' : 'user') as "user" | "assistant",
-              content: msg.content,
-              report: meta?.report,
-              fusionScore: meta?.fusionScore
-            };
-          });
-          setMessages(formatted);
+        const localHistory = JSON.parse(localStorage.getItem('psypredict_local_history') || '{}');
+        const conv = localHistory[sessionId];
+        if (conv) {
+          setConversationId(sessionId);
+          setMessages(conv.messages || []);
+          setCreatedDate(conv.created_at);
+        } else {
+          navigate('/dashboard');
         }
       } else {
         setMessages([]);
         setConversationId(null);
       }
-    };
+      return;
+    }
 
-    fetchMessages();
-  }, [user, sessionId]);
+    // Convex mode — data is handled reactively by queries above
+  }, [user, sessionId, isLocalMode]);
+
+  // Sync Convex query results into local state
+  useEffect(() => {
+    if (isLocalMode || !sessionId) return;
+
+    if (convexConversation === null) {
+      // Conversation not found or not authorized
+      navigate('/history');
+      return;
+    }
+
+    if (convexConversation) {
+      setCreatedDate(convexConversation.createdAt);
+    }
+
+    if (convexMessages) {
+      const formatted: Message[] = convexMessages.map((msg) => {
+        const meta = msg.metadata as Record<string, any> | null;
+        return {
+          role: (meta?.role === 'assistant' ? 'assistant' : 'user') as "user" | "assistant",
+          content: msg.content,
+          report: meta?.report,
+          fusionScore: meta?.fusionScore,
+        };
+      });
+      setMessages(formatted);
+    }
+  }, [convexConversation, convexMessages, isLocalMode, sessionId]);
 
   // Auto-scroll
   useEffect(() => {
@@ -304,7 +298,6 @@ const ChatInterface: React.FC<ChatProps> = ({ currentEmotion, sessionId }) => {
         if (isLocalMode) {
           activeConversationId = `local-${Date.now()}`;
           setConversationId(activeConversationId);
-          // Initial save for local conv
           const localHistory = JSON.parse(localStorage.getItem('psypredict_local_history') || '{}');
           localHistory[activeConversationId] = {
             id: activeConversationId,
@@ -314,18 +307,12 @@ const ChatInterface: React.FC<ChatProps> = ({ currentEmotion, sessionId }) => {
           };
           localStorage.setItem('psypredict_local_history', JSON.stringify(localHistory));
         } else {
-          const { data: newConv, error: convError } = await supabase
-            .from('conversations')
-            .insert({
-              user_id: user.id,
-              title: `Chat on ${new Date().toLocaleDateString()}`
-            })
-            .select()
-            .single();
-
-          if (convError || !newConv) throw new Error('Failed to create conversation');
-          activeConversationId = (newConv as ConversationRow).id;
-          setConversationId(activeConversationId);
+          // Create conversation in Convex
+          const newConvId = await createConversation({
+            title: `Chat on ${new Date().toLocaleDateString()}`
+          });
+          activeConversationId = newConvId;
+          setConversationId(newConvId);
         }
       }
 
@@ -337,13 +324,11 @@ const ChatInterface: React.FC<ChatProps> = ({ currentEmotion, sessionId }) => {
           localStorage.setItem('psypredict_local_history', JSON.stringify(localHistory));
         }
       } else {
-        await supabase.from('messages').insert({
-          user_id: user.id,
-          conversation_id: activeConversationId,
+        await createMessage({
+          conversationId: activeConversationId as Id<"conversations">,
           content: userText,
           metadata: { role: 'user', emotion: currentEmotion },
-          created_at: new Date().toISOString()
-        } as any);
+        });
       }
 
       // 2. Call AI API
@@ -369,13 +354,11 @@ const ChatInterface: React.FC<ChatProps> = ({ currentEmotion, sessionId }) => {
           localStorage.setItem('psypredict_local_history', JSON.stringify(localHistory));
         }
       } else {
-        await supabase.from('messages').insert({
-          user_id: user.id,
-          conversation_id: activeConversationId,
+        await createMessage({
+          conversationId: activeConversationId as Id<"conversations">,
           content: botContent,
           metadata: { role: 'assistant', report: result.report, fusionScore: result.fusion_risk_score },
-          created_at: new Date().toISOString()
-        } as any);
+        });
       }
 
     } catch (error) {

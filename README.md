@@ -95,7 +95,7 @@ Webcam → Keras CNN → face emotion score → Fusion Engine
 | **Text Emotion** | DistilBERT (`bhadresh-savani/distilbert-base-uncased-emotion`) |
 | **Crisis Detection** | MiniLM Zero-Shot NLI |
 | **Face Emotion** | OpenCV + Custom Keras CNN |
-| **Database** | Supabase (conversation history) |
+| **Database & Auth** | Convex (auth + conversation history) |
 | **Remedies** | Pandas + CSV knowledge base |
 
 ---
@@ -186,6 +186,11 @@ Swagger UI: **http://localhost:7860/docs**
 ```bash
 cd frontend
 npm install
+
+# Start Convex dev server (in one terminal)
+npx convex dev
+
+# Start frontend (in another terminal)
 npm run dev
 ```
 
@@ -225,6 +230,7 @@ FACE_WEIGHT=0.35
 MAX_CONTEXT_TURNS=10
 LOG_LEVEL=INFO
 RATE_LIMIT=30/minute
+VITE_CONVEX_URL=https://your-project.convex.cloud
 ```
 
 ---

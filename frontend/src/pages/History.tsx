@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import Navbar from '../components/common/Navbar';
-import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
+import { useQuery } from "convex/react";
+import { api } from "../../convex/_generated/api";
 import { Link } from 'react-router-dom';
 import { MessageSquare, Calendar, ChevronRight } from 'lucide-react';
 
@@ -11,39 +12,42 @@ const History: React.FC = () => {
     const [conversations, setConversations] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
+    // Convex query for cloud conversations (skipped in local mode)
+    const convexConversations = useQuery(
+        api.conversations.list,
+        !isLocalMode && user ? {} : "skip"
+    );
+
     useEffect(() => {
         if (!user) return;
 
-        const fetchHistory = async () => {
-            let combined: any[] = [];
+        let combined: any[] = [];
 
-            // 1. Fetch Local History
-            const localRaw = localStorage.getItem('psypredict_local_history');
-            if (localRaw) {
-                const localHistory = JSON.parse(localRaw);
-                combined = Object.values(localHistory).map((c: any) => ({ ...c, is_local: true }));
-            }
+        // 1. Fetch Local History
+        const localRaw = localStorage.getItem('psypredict_local_history');
+        if (localRaw) {
+            const localHistory = JSON.parse(localRaw);
+            combined = Object.values(localHistory).map((c: any) => ({ ...c, is_local: true }));
+        }
 
-            // 2. Fetch Supabase History (if not in local-only mode)
-            if (!isLocalMode) {
-                const { data, error } = await supabase
-                    .from('conversations')
-                    .select('*')
-                    .eq('user_id', user.id);
+        // 2. Merge Convex History (if not in local-only mode)
+        if (!isLocalMode && convexConversations) {
+            combined = [
+                ...combined,
+                ...convexConversations.map((c: any) => ({
+                    id: c._id,
+                    title: c.title,
+                    created_at: c.createdAt,
+                    is_local: false,
+                })),
+            ];
+        }
 
-                if (!error && data) {
-                    combined = [...combined, ...data.map((c: any) => ({ ...c, is_local: false }))];
-                }
-            }
-
-            // Sort by date
-            combined.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-            setConversations(combined);
-            setLoading(false);
-        };
-
-        fetchHistory();
-    }, [user]);
+        // Sort by date
+        combined.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        setConversations(combined);
+        setLoading(false);
+    }, [user, isLocalMode, convexConversations]);
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">

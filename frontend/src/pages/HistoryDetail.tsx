@@ -3,33 +3,32 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '../components/common/Navbar';
 import ChatInterface from '../components/features/ChatInterface';
 import { Trash2, AlertTriangle } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { useMutation } from "convex/react";
+import { api } from "../../convex/_generated/api";
+import type { Id } from "../../convex/_generated/dataModel";
+import { useAuth } from '../hooks/useAuth';
 
 const HistoryDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const { isLocalMode } = useAuth();
+  const removeConversation = useMutation(api.conversations.remove);
 
   const handleDelete = async () => {
     if (!id) return;
     setIsDeleting(true);
     try {
-      // 1. Delete all messages first (manual cascade)
-      const { error: msgError } = await supabase
-        .from('messages')
-        .delete()
-        .eq('conversation_id', id);
-
-      if (msgError) throw msgError;
-
-      // 2. Delete the conversation
-      const { error } = await supabase
-        .from('conversations')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
+      if (isLocalMode || id.startsWith('local-')) {
+        // Delete from localStorage
+        const localHistory = JSON.parse(localStorage.getItem('psypredict_local_history') || '{}');
+        delete localHistory[id];
+        localStorage.setItem('psypredict_local_history', JSON.stringify(localHistory));
+      } else {
+        // Delete from Convex (cascade delete handled server-side)
+        await removeConversation({ id: id as Id<"conversations"> });
+      }
       
       navigate('/history');
     } catch (error) {
@@ -63,11 +62,6 @@ const HistoryDetail: React.FC = () => {
                    </div>
                </div>
                
-               {/* 
-                  Reuse ChatInterface with sessionId. 
-                  Note: ChatInterface handles fetching logic.
-                  We pass a static emotion for now or could fetch it if we stored it on conversation level.
-               */}
                <div className="flex-1 min-h-0 bg-white min-w-0">
                   <ChatInterface currentEmotion="neutral" sessionId={id} />
                </div>
