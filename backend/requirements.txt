@@ -21,9 +21,9 @@ pillow
 gdown
 
 # --- NLP (PyTorch CPU-only via --index-url, see Dockerfile) ---
+# llama-cpp-python is installed separately in Dockerfile from pre-built CPU wheels
 transformers>=4.40.0
 sentencepiece==0.1.99
-llama-cpp-python>=0.2.77
 huggingface-hub>=0.23.0
 
 # --- Utilities ---
