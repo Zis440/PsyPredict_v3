@@ -27,18 +27,18 @@ const team = [
     linkedin: "https://www.linkedin.com/in/therandomuser03/",
   },
   {
-    photo: "nilanjana.webp",
-    title: "Nilanjana Sarkar",
-    email: "nilanjanasarkar2017@gmail.com",
-    // github: "#",
-    linkedin: "https://www.linkedin.com/in/nianjana-sarkar-4862011b9/",
-  },
-  {
     photo: "sanjana.webp",
     title: "Sanjana Chatterjee",
     email: "misssanjanachatterjee@gmail.com",
     github: "https://github.com/SanjanaChatterjee",
     linkedin: "https://www.linkedin.com/in/sanjana-jpeg/",
+  },
+  {
+    photo: "nilanjana.webp",
+    title: "Nilanjana Sarkar",
+    email: "nilanjanasarkar2017@gmail.com",
+    // github: "#",
+    linkedin: "https://www.linkedin.com/in/nianjana-sarkar-4862011b9/",
   },
 ];
 
@@ -409,7 +409,7 @@ const Landing = () => {
 
       {/* FOOTER */}
       <footer className="border-t py-8 text-center text-xs sm:text-sm text-slate-400">
-        © 2025 PsyPredict. All rights reserved.
+        © 2026 PsyPredict. All rights reserved.
       </footer>
     </div>
   );
