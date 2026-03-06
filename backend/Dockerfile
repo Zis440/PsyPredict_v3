@@ -4,11 +4,14 @@ FROM python:3.10-slim
 # 2. Set working directory
 WORKDIR /app
 
-# 3. Install minimal system dependencies
+# 3. Install system dependencies
 #    - libgl1/libglib2.0-0: OpenCV needs these
+#    - build-essential/cmake: needed to compile llama-cpp-python from source
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libgl1 \
     libglib2.0-0 \
+    build-essential \
+    cmake \
     && rm -rf /var/lib/apt/lists/*
 
 # 4. Install PyTorch CPU-only FIRST (saves ~1.5GB vs full CUDA torch)
