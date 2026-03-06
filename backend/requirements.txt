@@ -12,18 +12,16 @@ anyio>=4.0.0
 # --- Rate Limiting ---
 slowapi>=0.1.9
 
-# --- AI & Vision (Preserved - Version Locked for Stability) ---
+# --- AI & Vision (CPU-only TensorFlow — saves ~500MB vs full tensorflow) ---
 numpy<2.0
-opencv-python
-tensorflow
+opencv-python-headless
 tensorflow-cpu
 pandas
 pillow
 gdown
 
-# --- NLP (New) ---
+# --- NLP (PyTorch CPU-only via --index-url, see Dockerfile) ---
 transformers>=4.40.0
-torch>=2.0.0
 sentencepiece==0.1.99
 llama-cpp-python>=0.2.77
 huggingface-hub>=0.23.0
