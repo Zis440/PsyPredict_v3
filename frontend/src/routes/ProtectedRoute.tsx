@@ -120,13 +120,13 @@ export const Login: React.FC = () => {
           </div>
 
           <div className="mt-8 flex flex-col items-center gap-3">
-            <div className="w-16 border-t border-gray-200"></div>
+            {/* <div className="w-16 border-t border-gray-200"></div>
             <button
               onClick={() => enterLocalMode()}
               className="text-xs text-gray-400 hover:text-indigo-600 transition-colors uppercase tracking-widest font-bold"
             >
               Run In Offline Mode
-            </button>
+            </button> */}
           </div>
         </div>
       </motion.div>
