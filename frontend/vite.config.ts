@@ -24,9 +24,9 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:7860', // FastAPI Backend (v2.0)
+        target: 'https://therandomuser03-psypredict-backend.hf.space', // FastAPI Backend (v2.0)
         changeOrigin: true,
-        secure: false,
+        secure: true,
       }
     }
   }

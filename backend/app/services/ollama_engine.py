@@ -266,10 +266,12 @@ class OllamaEngine:
             reply, report = await self._generate_ollama(user_text, face_emotion, history, text_emotion_summary)
             # If _generate_ollama returned the hardcoded fallback string, it failed its retries
             if "inference service is temporarily unavailable" in reply:
-                raise ConnectionError("Ollama service unreachable after retries.")
+                # Check for GGUF before giving up
+                if os.path.exists(self.settings.GGUF_MODEL_PATH):
+                    logger.info("Ollama service unreachable after retries, falling back to GGUF.")
+                    return await self._generate_local(user_text, face_emotion, history, text_emotion_summary)
             return reply, report
         except Exception as exc:
-            import os
             if os.path.exists(self.settings.GGUF_MODEL_PATH):
                 logger.info("Ollama failed, falling back to embedded GGUF model: %s", exc)
                 return await self._generate_local(user_text, face_emotion, history, text_emotion_summary)
@@ -435,8 +437,7 @@ class OllamaEngine:
     ) -> AsyncIterator[str]:
         """
         Yields raw text chunks as they arrive from Ollama.
-        The full accumulated response is NOT parsed into PsychReport here;
-        caller must buffer and parse at end.
+        With automatic fallback to local streaming if Ollama is unreachable.
         """
         if history is None:
             history = []
@@ -467,7 +468,12 @@ class OllamaEngine:
                         continue
         except Exception as exc:
             logger.error("Ollama streaming failed: %s", exc)
-            yield "\n[Inference service error — please retry]\n"
+            if os.path.exists(self.settings.GGUF_MODEL_PATH):
+                logger.info("Falling back to local GGUF streaming.")
+                async for chunk in self._generate_stream_local(user_text, face_emotion, history, text_emotion_summary):
+                    yield chunk
+            else:
+                yield "\n[Inference service error — please retry]\n"
 
 
 # ---------------------------------------------------------------------------
