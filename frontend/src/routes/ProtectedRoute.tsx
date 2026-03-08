@@ -32,10 +32,54 @@ export const Login: React.FC = () => {
   const { signIn } = useAuthActions();
   const [error, setError] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(false);
+  const [step, setStep] = React.useState<'signIn' | 'signUp'>('signIn');
+
+  // Form fields
+  const [email, setEmail] = React.useState('');
+  const [password, setPassword] = React.useState('');
+  const [name, setName] = React.useState('');
 
   React.useEffect(() => {
     if (user) window.location.href = '/dashboard';
   }, [user]);
+
+  const validateForm = (): string | null => {
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return 'Please enter a valid email address.';
+    }
+    if (password.length < 8) return 'Password must be at least 8 characters.';
+    if (!/[a-z]/.test(password)) return 'Password must contain a lowercase letter.';
+    if (!/[A-Z]/.test(password)) return 'Password must contain an uppercase letter.';
+    if (!/\d/.test(password)) return 'Password must contain a number.';
+    return null;
+  };
+
+  const handlePasswordAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    const validationError = validateForm();
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const formData = new FormData();
+      formData.set('email', email);
+      formData.set('password', password);
+      formData.set('flow', step);
+      if (step === 'signUp' && name) {
+        formData.set('name', name);
+      }
+      await signIn('password', formData);
+    } catch (err: any) {
+      const msg = err?.data ?? err?.message ?? 'Authentication failed. Please try again.';
+      setError(typeof msg === 'string' ? msg : JSON.stringify(msg));
+      setLoading(false);
+    }
+  };
 
   const handleOAuthLogin = async (provider: 'google' | 'microsoft-entra-id') => {
     setLoading(true);
@@ -58,9 +102,13 @@ export const Login: React.FC = () => {
         <div className="p-8">
           <div className="text-center mb-8">
             <span className="text-4xl block mb-2">🧠</span>
-            <h2 className="text-2xl font-bold text-gray-900">Welcome to PsyPredict</h2>
+            <h2 className="text-2xl font-bold text-gray-900">
+              {step === 'signIn' ? 'Welcome Back' : 'Create Account'}
+            </h2>
             <p className="text-gray-500 mt-2 text-sm">
-              Sign in to access your dashboard
+              {step === 'signIn'
+                ? 'Sign in to access your dashboard'
+                : 'Sign up to get started with PsyPredict'}
             </p>
           </div>
 
@@ -72,7 +120,9 @@ export const Login: React.FC = () => {
                     <AlertTriangle size={18} className="text-amber-600" />
                   </div>
                   <div className="flex flex-col gap-1">
-                    <span className="font-bold leading-tight">Connection Issue Detected</span>
+                    <span className="font-bold leading-tight">
+                      {step === 'signUp' ? 'Sign-up Issue' : 'Sign-in Issue'}
+                    </span>
                     <span className="text-amber-700/80 text-xs leading-relaxed">
                       {authError || error}
                     </span>
@@ -87,6 +137,65 @@ export const Login: React.FC = () => {
                 </button>
               </div>
             )}
+
+            {/* Email / Password Form */}
+            <form onSubmit={handlePasswordAuth} className="space-y-3">
+              {step === 'signUp' && (
+                <input
+                  name="name"
+                  type="text"
+                  placeholder="Full Name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                />
+              )}
+              <input
+                name="email"
+                type="email"
+                placeholder="Email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+              />
+              <input
+                name="password"
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+              />
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-indigo-600 text-white py-3 rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-50"
+              >
+                {loading ? 'Please wait…' : step === 'signIn' ? 'Sign In' : 'Sign Up'}
+              </button>
+            </form>
+
+            <button
+              type="button"
+              onClick={() => {
+                setStep(step === 'signIn' ? 'signUp' : 'signIn');
+                setError(null);
+              }}
+              className="w-full text-xs text-gray-500 hover:text-indigo-600 transition-colors font-medium"
+            >
+              {step === 'signIn'
+                ? "Don't have an account? Sign up"
+                : 'Already have an account? Sign in'}
+            </button>
+
+            {/* Divider */}
+            <div className="flex items-center gap-3 my-2">
+              <div className="flex-1 border-t border-gray-200"></div>
+              <span className="text-xs text-gray-400 font-medium">or continue with</span>
+              <div className="flex-1 border-t border-gray-200"></div>
+            </div>
 
             {/* Google */}
             <button
@@ -120,13 +229,6 @@ export const Login: React.FC = () => {
           </div>
 
           <div className="mt-8 flex flex-col items-center gap-3">
-            {/* <div className="w-16 border-t border-gray-200"></div>
-            <button
-              onClick={() => enterLocalMode()}
-              className="text-xs text-gray-400 hover:text-indigo-600 transition-colors uppercase tracking-widest font-bold"
-            >
-              Run In Offline Mode
-            </button> */}
           </div>
         </div>
       </motion.div>
