@@ -43,7 +43,7 @@ export const Login: React.FC = () => {
       <div className="w-full max-w-[400px]">
         {mode === 'signIn' ? (
           <div className="flex flex-col items-center">
-            <SignIn routing="hash" />
+            <SignIn routing="hash" fallbackRedirectUrl="/dashboard" />
             <button 
               onClick={() => setMode('signUp')}
               className="mt-6 text-sm text-gray-500 hover:text-indigo-600 font-medium transition-colors"
@@ -53,7 +53,7 @@ export const Login: React.FC = () => {
           </div>
         ) : (
           <div className="flex flex-col items-center">
-            <SignUp routing="hash" />
+            <SignUp routing="hash" fallbackRedirectUrl="/dashboard" />
             <button 
               onClick={() => setMode('signIn')}
               className="mt-6 text-sm text-gray-500 hover:text-indigo-600 font-medium transition-colors"
