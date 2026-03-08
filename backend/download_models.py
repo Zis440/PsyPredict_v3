@@ -16,6 +16,13 @@ FACE_MODEL_PATH = os.path.join(ML_ASSETS, "emotion_model_trained.h5")
 MEDS_CSV_PATH = os.path.join(ML_ASSETS, "MEDICATION.csv")
 LLAMA_GGUF_PATH = os.path.join(ML_ASSETS, "llama-3-8b-instruct.Q4_K_M.gguf")
 
+# HF Transformers (Downloaded via snapshot_download for full directory)
+CRISIS_MODEL_REPO = "cross-encoder/nli-MiniLM2-L6-H768"
+DISTILBERT_MODEL_REPO = "bhadresh-savani/distilbert-base-uncased-emotion"
+
+CRISIS_MODEL_PATH = os.path.join(ML_ASSETS, "crisis_model")
+DISTILBERT_MODEL_PATH = os.path.join(ML_ASSETS, "distilbert_model")
+
 def download_drive_file(file_id, output_path):
     if not os.path.exists(output_path):
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
@@ -42,6 +49,19 @@ def download_hf_model(repo_id, filename, output_path):
     else:
         print(f"✅ Found {output_path}, skipping.")
 
+def download_hf_directory(repo_id, output_dir):
+    from huggingface_hub import snapshot_download
+    if not os.path.exists(output_dir) or not os.listdir(output_dir):
+        print(f"⬇️ Downloading HF repo: {repo_id} to {output_dir}...")
+        snapshot_download(
+            repo_id=repo_id,
+            local_dir=output_dir,
+            local_dir_use_symlinks=False,
+            ignore_patterns=["*.msgpack", "*.h5", "*.ot", "rust_model.ot"] # save space, only PyTorch/Safetensors needed
+        )
+    else:
+        print(f"✅ Found {output_dir}, skipping.")
+
 if __name__ == "__main__":
     print("🚀 Starting Production Model Sync...")
     
@@ -53,6 +73,13 @@ if __name__ == "__main__":
     try:
         download_hf_model(LLAMA_REPO, LLAMA_FILE, LLAMA_GGUF_PATH)
     except Exception as e:
-        print(f"⚠️ HF Download failed (expected on local dev if no internet): {e}")
+        print(f"⚠️ HF LLaMA Download failed (expected on local dev if no internet): {e}")
+
+    # 3. HF Transformers Pipeline Models
+    try:
+        download_hf_directory(CRISIS_MODEL_REPO, CRISIS_MODEL_PATH)
+        download_hf_directory(DISTILBERT_MODEL_REPO, DISTILBERT_MODEL_PATH)
+    except Exception as e:
+        print(f"⚠️ HF Transformers Download failed: {e}")
         
     print("✅ All models synchronized!")

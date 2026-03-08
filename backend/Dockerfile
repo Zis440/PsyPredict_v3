@@ -40,6 +40,7 @@ RUN python download_models.py
 # 9. Environment & Port settings (7860 is HF Spaces standard)
 ENV PYTHONPATH=/app
 ENV USE_EMBEDDED_LLM=True
+ENV HF_HUB_OFFLINE=1
 EXPOSE 7860
 
 # 10. Run the app with Uvicorn

@@ -63,10 +63,14 @@ def initialize_crisis_classifier() -> None:
     global _zero_shot_pipeline, _load_error
     try:
         from transformers import pipeline as hf_pipeline
-        logger.info("Loading crisis zero-shot classifier...")
+        import os
+        
+        local_path = os.path.join("app", "ml_assets", "crisis_model")
+        logger.info("Loading crisis zero-shot classifier from %s", local_path)
+        
         _zero_shot_pipeline = hf_pipeline(
             "zero-shot-classification",
-            model="cross-encoder/nli-MiniLM2-L6-H768",
+            model=local_path if os.path.exists(local_path) else "cross-encoder/nli-MiniLM2-L6-H768",
             device=-1,  # CPU
         )
         logger.info("✅ Crisis classifier loaded.")
