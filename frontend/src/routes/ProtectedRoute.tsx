@@ -28,7 +28,7 @@ export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ childr
 };
 
 export const Login: React.FC = () => {
-  const { user, enterLocalMode, authError } = useAuth();
+  const { user, authError } = useAuth();
   const { signIn } = useAuthActions();
   const [error, setError] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(false);
@@ -118,15 +118,8 @@ export const Login: React.FC = () => {
                       {authError || error}
                     </span>
                   </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => enterLocalMode()}
-                  className="w-full bg-amber-600/10 hover:bg-amber-600/20 text-amber-700 py-2.5 rounded-xl font-bold text-xs transition-colors border border-amber-600/20"
-                >
-                  Switch to Offline Mode (Guest) →
-                </button>
               </div>
+        </div>
             )}
 
             {/* Email / Password Form */}
