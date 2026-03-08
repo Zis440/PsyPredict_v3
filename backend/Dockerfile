@@ -7,7 +7,7 @@ WORKDIR /app
 # 3. Install system dependencies
 #    - libgl1/libglib2.0-0: OpenCV needs these
 #    - build-essential/cmake: needed to compile llama-cpp-python from source
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update && apt-get install -y --fix-missing --no-install-recommends -o Acquire::Retries=3 \
     libgl1 \
     libglib2.0-0 \
     build-essential \
