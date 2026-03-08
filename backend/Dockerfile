@@ -20,8 +20,11 @@ RUN pip install --no-cache-dir \
     torch --index-url https://download.pytorch.org/whl/cpu
 
 # 5. Install llama-cpp-python from pre-built CPU wheels (avoids 30+ min C++ compile)
-RUN pip install --no-cache-dir \
-    llama-cpp-python \
+#    PINNED to 0.3.2 — the latest version with pre-built wheels on the abetlen index.
+#    Without the pin, pip resolves 0.3.16+ from PyPI which has NO pre-built wheel
+#    and falls back to compiling llama.cpp from source (times out on HF Spaces).
+RUN pip install --no-cache-dir --prefer-binary \
+    llama-cpp-python==0.3.2 \
     --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cpu
 
 # 6. Install remaining Python dependencies
