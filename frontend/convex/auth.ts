@@ -4,7 +4,14 @@ import { convexAuth } from "@convex-dev/auth/server";
 
 export const { auth, signIn, signOut, store } = convexAuth({
   providers: [
-    Google,
+    Google({
+      authorization: {
+        params: {
+          prompt: "consent",
+          access_type: "offline",
+        },
+      },
+    }),
     MicrosoftEntraId({
       profilePhotoSize: 48,
       authorization: {
