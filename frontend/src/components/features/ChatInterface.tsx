@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { sendChatMessage } from "../../services/api";
 import type { PsychReport, CrisisResource, RemedyData } from "../../services/api";
 import { Bot, User, FileText, ChevronDown, ChevronUp, AlertTriangle, Phone } from "lucide-react";
-import { useUser } from '@clerk/clerk-react';
+import { useUser } from '@clerk/react';
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { UserButton, useUser } from '@clerk/clerk-react';
+import { UserButton, useUser } from '@clerk/react';
 import { Menu, X, Settings, LayoutDashboard, History } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 

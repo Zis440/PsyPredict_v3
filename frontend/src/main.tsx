@@ -1,6 +1,6 @@
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
-import { ClerkProvider, useAuth } from "@clerk/clerk-react";
+import { ClerkProvider, useAuth } from "@clerk/react";
 import { ConvexProviderWithClerk } from "convex/react-clerk";
 import { ConvexReactClient } from "convex/react";
 import App from './App.tsx'

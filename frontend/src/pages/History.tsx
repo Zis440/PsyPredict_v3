@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import Navbar from '../components/common/Navbar';
-import { useUser } from '@clerk/clerk-react';
+import { useUser } from '@clerk/react';
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Link } from 'react-router-dom';

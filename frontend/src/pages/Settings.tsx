@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '../components/common/Navbar';
-import { useUser } from '@clerk/clerk-react';
+import { useUser } from '@clerk/react';
 import { useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { motion } from 'framer-motion';
