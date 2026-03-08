@@ -1,12 +1,8 @@
-// src/components/features/ChatInterface.tsx
-// Upgraded: Displays structured PsychReport (clinical report panel) below each AI response.
-// Convex-powered: Uses Convex queries/mutations for conversation and message persistence.
-
 import React, { useState, useRef, useEffect } from "react";
 import { sendChatMessage } from "../../services/api";
 import type { PsychReport, CrisisResource, RemedyData } from "../../services/api";
 import { Bot, User, FileText, ChevronDown, ChevronUp, AlertTriangle, Phone } from "lucide-react";
-import { useAuth } from "../../hooks/useAuth";
+import { useUser } from '@clerk/clerk-react';
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
@@ -198,7 +194,7 @@ const ClinicalReport: React.FC<{ report: PsychReport; fusionScore?: number }> = 
 
 // ── Main ChatInterface ─────────────────────────────────────────────────────
 const ChatInterface: React.FC<ChatProps> = ({ currentEmotion, sessionId }) => {
-  const { user } = useAuth();
+  const { user } = useUser();
   const navigate = useNavigate();
   const [messages, setMessages] = useState<Message[]>([]);
   const [conversationId, setConversationId] = useState<string | null>(sessionId || null);

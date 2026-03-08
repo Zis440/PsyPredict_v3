@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '../components/common/Navbar';
-import { useAuth } from '../hooks/useAuth';
+import { useUser } from '@clerk/clerk-react';
 import { useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { motion } from 'framer-motion';
 import { Save, AlertCircle, CheckCircle } from 'lucide-react';
 
 const Settings: React.FC = () => {
-  const { user } = useAuth();
+  const { user } = useUser();
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const updateProfile = useMutation(api.users.updateProfile);
@@ -22,7 +22,7 @@ const Settings: React.FC = () => {
       setFormData(prev => ({
         ...prev,
         fullName: user.fullName || '',
-        email: user.email || '',
+        email: user.primaryEmailAddress?.emailAddress || '',
       }));
     }
   }, [user]);

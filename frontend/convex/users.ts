@@ -1,13 +1,14 @@
 import { v } from "convex/values";
 import { query, mutation } from "./_generated/server";
-import { getAuthUserId } from "@convex-dev/auth/server";
 
 // Get the current authenticated user's profile
 export const currentUser = query({
   args: {},
   handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) return null;
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return null;
+
+    const userId = identity.subject;
 
     // Try to get the profile
     const profile = await ctx.db
@@ -17,14 +18,13 @@ export const currentUser = query({
 
     if (profile) return profile;
 
-    // If no profile exists yet, return basic info from auth user
-    const authUser = await ctx.db.get(userId);
+    // If no profile exists yet, return basic info from Clerk identity
     return {
       _id: null,
       userId,
-      fullName: (authUser as any)?.name ?? null,
-      email: (authUser as any)?.email ?? null,
-      avatarUrl: (authUser as any)?.image ?? null,
+      fullName: identity.name ?? null,
+      email: identity.email ?? null,
+      avatarUrl: identity.pictureUrl ?? null,
       updatedAt: null,
     };
   },
@@ -37,8 +37,10 @@ export const updateProfile = mutation({
     email: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Not authenticated");
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Not authenticated");
+
+    const userId = identity.subject;
 
     const existing = await ctx.db
       .query("profiles")

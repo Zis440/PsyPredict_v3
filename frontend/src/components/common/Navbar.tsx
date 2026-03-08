@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { useAuth } from '../../hooks/useAuth';
-import { Menu, X, LogOut, Settings, LayoutDashboard, User, History } from 'lucide-react';
+import { UserButton, useUser } from '@clerk/clerk-react';
+import { Menu, X, Settings, LayoutDashboard, History } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const Navbar: React.FC = () => {
-  const { signOut, user } = useAuth();
+  const { user } = useUser();
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -52,29 +52,21 @@ const Navbar: React.FC = () => {
             <div className="h-6 w-px bg-gray-200" />
 
             <div className="flex items-center gap-3">
-              <div className="hidden lg:block text-right">
+              <div className="hidden lg:block text-right mr-2">
                 <p className="text-sm font-medium text-gray-900 leading-none">
                   {user?.fullName || 'User'}
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
-                  {user?.email}
+                  {user?.primaryEmailAddress?.emailAddress}
                 </p>
               </div>
-              <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600">
-                <User size={18} />
-              </div>
-              <button
-                onClick={() => signOut()}
-                className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors"
-                title="Sign Out"
-              >
-                <LogOut size={20} />
-              </button>
+              <UserButton appearance={{ elements: { userButtonAvatarBox: "w-8 h-8" } }} />
             </div>
           </div>
 
           {/* Mobile menu button */}
-          <div className="flex items-center md:hidden">
+          <div className="flex items-center md:hidden gap-4">
+            <UserButton appearance={{ elements: { userButtonAvatarBox: "w-8 h-8" } }} />
             <button
               onClick={() => setIsOpen(!isOpen)}
               className="p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none"
@@ -111,32 +103,6 @@ const Navbar: React.FC = () => {
                   {link.label}
                 </Link>
               ))}
-              
-              <div className="border-t border-gray-100 my-2 pt-2">
-                <div className="flex items-center gap-3 px-3 py-3">
-                  <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600">
-                    <User size={18} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">
-                      {user?.fullName || 'User'}
-                    </p>
-                    <p className="text-xs text-gray-500 truncate">
-                      {user?.email}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => {
-                    signOut();
-                    setIsOpen(false);
-                  }}
-                  className="w-full flex items-center gap-3 px-3 py-3 text-base font-medium text-red-600 hover:bg-red-50 rounded-md"
-                >
-                  <LogOut size={20} />
-                  Sign Out
-                </button>
-              </div>
             </div>
           </motion.div>
         )}

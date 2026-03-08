@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import Navbar from '../components/common/Navbar';
-import { useAuth } from '../hooks/useAuth';
+import { useUser } from '@clerk/clerk-react';
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Link } from 'react-router-dom';
@@ -8,7 +8,7 @@ import { MessageSquare, Calendar, ChevronRight } from 'lucide-react';
 
 
 const History: React.FC = () => {
-    const { user } = useAuth();
+    const { user } = useUser();
     const [conversations, setConversations] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
