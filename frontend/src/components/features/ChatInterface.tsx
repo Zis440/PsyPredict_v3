@@ -198,7 +198,7 @@ const ClinicalReport: React.FC<{ report: PsychReport; fusionScore?: number }> = 
 
 // ── Main ChatInterface ─────────────────────────────────────────────────────
 const ChatInterface: React.FC<ChatProps> = ({ currentEmotion, sessionId }) => {
-  const { user, isLocalMode } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [messages, setMessages] = useState<Message[]>([]);
   const [conversationId, setConversationId] = useState<string | null>(sessionId || null);
@@ -212,47 +212,31 @@ const ChatInterface: React.FC<ChatProps> = ({ currentEmotion, sessionId }) => {
   const createConversation = useMutation(api.conversations.create);
   const createMessage = useMutation(api.messages.create);
 
-  // Convex queries (only used when NOT in local mode and we have a sessionId)
+  // Convex queries
   const convexConversation = useQuery(
     api.conversations.get,
-    !isLocalMode && sessionId ? { id: sessionId as Id<"conversations"> } : "skip"
+    sessionId ? { id: sessionId as Id<"conversations"> } : "skip"
   );
   const convexMessages = useQuery(
     api.messages.listByConversation,
-    !isLocalMode && sessionId ? { conversationId: sessionId as Id<"conversations"> } : "skip"
+    sessionId ? { conversationId: sessionId as Id<"conversations"> } : "skip"
   );
 
-  // Load messages from Convex or localStorage
+  // Reset state when no session
   useEffect(() => {
     if (!user) return;
-
-    if (isLocalMode) {
-      if (sessionId) {
-        const localHistory = JSON.parse(localStorage.getItem('psypredict_local_history') || '{}');
-        const conv = localHistory[sessionId];
-        if (conv) {
-          setConversationId(sessionId);
-          setMessages(conv.messages || []);
-          setCreatedDate(conv.created_at);
-        } else {
-          navigate('/dashboard');
-        }
-      } else {
-        setMessages([]);
-        setConversationId(null);
-      }
-      return;
+    if (!sessionId) {
+      setMessages([]);
+      setConversationId(null);
     }
-
-    // Convex mode — data is handled reactively by queries above
-  }, [user, sessionId, isLocalMode]);
+    // Convex mode — data is handled reactively by queries
+  }, [user, sessionId]);
 
   // Sync Convex query results into local state
   useEffect(() => {
-    if (isLocalMode || !sessionId) return;
+    if (!sessionId) return;
 
     if (convexConversation === null) {
-      // Conversation not found or not authorized
       navigate('/history');
       return;
     }
@@ -273,7 +257,7 @@ const ChatInterface: React.FC<ChatProps> = ({ currentEmotion, sessionId }) => {
       });
       setMessages(formatted);
     }
-  }, [convexConversation, convexMessages, isLocalMode, sessionId]);
+  }, [convexConversation, convexMessages, sessionId]);
 
   // Auto-scroll
   useEffect(() => {
@@ -295,41 +279,19 @@ const ChatInterface: React.FC<ChatProps> = ({ currentEmotion, sessionId }) => {
       let activeConversationId = conversationId;
 
       if (!activeConversationId) {
-        if (isLocalMode) {
-          activeConversationId = `local-${Date.now()}`;
-          setConversationId(activeConversationId);
-          const localHistory = JSON.parse(localStorage.getItem('psypredict_local_history') || '{}');
-          localHistory[activeConversationId] = {
-            id: activeConversationId,
-            title: `Local Chat ${new Date().toLocaleDateString()}`,
-            created_at: new Date().toISOString(),
-            messages: []
-          };
-          localStorage.setItem('psypredict_local_history', JSON.stringify(localHistory));
-        } else {
-          // Create conversation in Convex
-          const newConvId = await createConversation({
-            title: `Chat on ${new Date().toLocaleDateString()}`
-          });
-          activeConversationId = newConvId;
-          setConversationId(newConvId);
-        }
+        const newConvId = await createConversation({
+          title: `Chat on ${new Date().toLocaleDateString()}`
+        });
+        activeConversationId = newConvId;
+        setConversationId(newConvId);
       }
 
       // 1. Save User Message
-      if (isLocalMode) {
-        const localHistory = JSON.parse(localStorage.getItem('psypredict_local_history') || '{}');
-        if (localHistory[activeConversationId]) {
-          localHistory[activeConversationId].messages.push(userMsg);
-          localStorage.setItem('psypredict_local_history', JSON.stringify(localHistory));
-        }
-      } else {
-        await createMessage({
-          conversationId: activeConversationId as Id<"conversations">,
-          content: userText,
-          metadata: { role: 'user', emotion: currentEmotion },
-        });
-      }
+      await createMessage({
+        conversationId: activeConversationId as Id<"conversations">,
+        content: userText,
+        metadata: { role: 'user', emotion: currentEmotion },
+      });
 
       // 2. Call AI API
       const historyForApi = [...messages, userMsg];
@@ -347,19 +309,11 @@ const ChatInterface: React.FC<ChatProps> = ({ currentEmotion, sessionId }) => {
       setMessages((prev) => [...prev, botMsg]);
 
       // 3. Save Assistant Message
-      if (isLocalMode) {
-        const localHistory = JSON.parse(localStorage.getItem('psypredict_local_history') || '{}');
-        if (localHistory[activeConversationId]) {
-          localHistory[activeConversationId].messages.push(botMsg);
-          localStorage.setItem('psypredict_local_history', JSON.stringify(localHistory));
-        }
-      } else {
-        await createMessage({
-          conversationId: activeConversationId as Id<"conversations">,
-          content: botContent,
-          metadata: { role: 'assistant', report: result.report, fusionScore: result.fusion_risk_score },
-        });
-      }
+      await createMessage({
+        conversationId: activeConversationId as Id<"conversations">,
+        content: botContent,
+        metadata: { role: 'assistant', report: result.report, fusionScore: result.fusion_risk_score },
+      });
 
     } catch (error) {
       console.error("Chat failed:", error);

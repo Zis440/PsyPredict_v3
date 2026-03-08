@@ -6,30 +6,20 @@ import { Trash2, AlertTriangle } from 'lucide-react';
 import { useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
-import { useAuth } from '../hooks/useAuth';
+
 
 const HistoryDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const { isLocalMode } = useAuth();
   const removeConversation = useMutation(api.conversations.remove);
 
   const handleDelete = async () => {
     if (!id) return;
     setIsDeleting(true);
     try {
-      if (isLocalMode || id.startsWith('local-')) {
-        // Delete from localStorage
-        const localHistory = JSON.parse(localStorage.getItem('psypredict_local_history') || '{}');
-        delete localHistory[id];
-        localStorage.setItem('psypredict_local_history', JSON.stringify(localHistory));
-      } else {
-        // Delete from Convex (cascade delete handled server-side)
-        await removeConversation({ id: id as Id<"conversations"> });
-      }
-      
+      await removeConversation({ id: id as Id<"conversations"> });
       navigate('/history');
     } catch (error) {
       console.error('Error deleting conversation:', error);

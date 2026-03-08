@@ -8,46 +8,31 @@ import { MessageSquare, Calendar, ChevronRight } from 'lucide-react';
 
 
 const History: React.FC = () => {
-    const { user, isLocalMode } = useAuth();
+    const { user } = useAuth();
     const [conversations, setConversations] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
-    // Convex query for cloud conversations (skipped in local mode)
+    // Convex query for conversations
     const convexConversations = useQuery(
         api.conversations.list,
-        !isLocalMode && user ? {} : "skip"
+        user ? {} : "skip"
     );
 
     useEffect(() => {
         if (!user) return;
 
-        let combined: any[] = [];
-
-        // 1. Fetch Local History
-        const localRaw = localStorage.getItem('psypredict_local_history');
-        if (localRaw) {
-            const localHistory = JSON.parse(localRaw);
-            combined = Object.values(localHistory).map((c: any) => ({ ...c, is_local: true }));
-        }
-
-        // 2. Merge Convex History (if not in local-only mode)
-        if (!isLocalMode && convexConversations) {
-            combined = [
-                ...combined,
-                ...convexConversations.map((c: any) => ({
+        if (convexConversations) {
+            const sorted = [...convexConversations]
+                .map((c: any) => ({
                     id: c._id,
                     title: c.title,
                     created_at: c.createdAt,
-                    is_local: false,
-                })),
-            ];
+                }))
+                .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+            setConversations(sorted);
         }
-
-        // Sort by date
-        combined.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-        setConversations(combined);
         setLoading(false);
-    }, [user, isLocalMode, convexConversations]);
+    }, [user, convexConversations]);
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -87,12 +72,7 @@ const History: React.FC = () => {
                                         <MessageSquare className="text-indigo-600" size={20} />
                                     </div>
                                     <div>
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <h3 className="font-semibold text-gray-900">{conv.title || 'Untitled Conversation'}</h3>
-                                            {conv.is_local && (
-                                                <span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-md font-bold uppercase tracking-wider">Local</span>
-                                            )}
-                                        </div>
+                                        <h3 className="font-semibold text-gray-900 mb-1">{conv.title || 'Untitled Conversation'}</h3>
                                         <div className="flex items-center gap-2 text-sm text-gray-500">
                                             <Calendar size={14} />
                                             {new Date(conv.created_at).toLocaleDateString(undefined, {
