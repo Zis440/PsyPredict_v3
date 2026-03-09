@@ -1,4 +1,5 @@
-FROM python:3.10-slim
+# Use standard Python image (Debian based, not Alpine/Musl)
+FROM python:3.10
 
 WORKDIR /app
 
