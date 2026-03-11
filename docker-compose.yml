@@ -1,24 +1,56 @@
-services:
-  # 🐍 Backend Service
-  backend:
-    build: ./backend
-    ports:
-      - "5000:5000"
-    volumes:
-      # This "syncs" your live code changes to the container
-      - ./backend:/app
-      - /app/venv
-    env_file:
-      - .env  # Reads your GOOGLE_API_KEY from the root .env file
+# ─────────────────────────────────────────────────────────────────────────────
+# PsyPredict — Docker Compose for LOCAL DEVELOPMENT
+#
+# Usage:
+#   docker compose up --build
+#
+# This spins up both services locally.
+# For production, the backend is deployed to HF Spaces and
+# the frontend is deployed to Vercel (see DEPLOY.md).
+# ─────────────────────────────────────────────────────────────────────────────
 
-  # ⚛️ Frontend Service
+services:
+
+  # ── Backend (FastAPI + Ollama + DistilBERT + Keras) ─────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "7860:7860"       # HF Spaces standard port — keep consistent locally too
+    env_file:
+      - ./backend/.env    # OLLAMA_BASE_URL, OLLAMA_MODEL, LOG_LEVEL, etc.
+    environment:
+      # Override to use container-local Ollama (start.sh handles startup)
+      - OLLAMA_BASE_URL=http://localhost:11434
+    volumes:
+      # Persist Ollama model cache across container restarts (saves re-download time)
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:7860/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s   # Allow time for Ollama to pull the model on first run
+
+  # ── Frontend (Vite Dev Server) ───────────────────────────────────────────────
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
     ports:
       - "5173:5173"
-    volumes:
-      # This "syncs" your live code changes to the container
-      - ./frontend:/app
-      - /app/node_modules
+    environment:
+      # Point to the local backend
+      - VITE_BACKEND_URL=http://localhost:7860
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+# ── Named Volumes ──────────────────────────────────────────────────────────────
+volumes:
+  ollama_data:
+    # Stores downloaded Ollama models (~2.4 GB for phi3.5:3.8b-mini-instruct-q4_0)
+    # Persists across `docker compose down` so you don't re-download on every restart

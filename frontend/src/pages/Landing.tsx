@@ -128,13 +128,7 @@ const Landing = () => {
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => {
-              // Add a check? We can just let the router handle it
-              // Since /dashboard is protected, it will redirect to /login if needed.
-              // But explicit /login link is sometimes cleaner if we know they aren't auth'd.
-              // For simplicity and adhering to constraints, we'll just go to dashboard and let the guard work.
-              navigate("/dashboard");
-            }}
+            onClick={() => navigate("/dashboard")}
             className="bg-indigo-600 text-white px-6 py-3 rounded-full text-sm font-semibold hover:bg-indigo-700 transition"
           >
             Start Analysis
@@ -288,12 +282,10 @@ const Landing = () => {
               ))}
             </ul>
 
-            {/* Plain-English Guarantee */}
             <p className="mt-6 text-sm text-slate-500 italic">
               Your data is yours. You have full control to view or delete your history at any time.
             </p>
 
-            {/* Disclaimer */}
             <p className="mt-4 text-xs text-slate-400">
               PsyPredict is not a diagnostic or medical service and does not
               replace professional mental health care.
@@ -364,7 +356,6 @@ const Landing = () => {
               <h3 className="font-bold mb-4">{s.title}</h3>
 
               <div className="flex gap-3 text-slate-500">
-                {/* Email */}
                 {s.email && (
                   <motion.a
                     whileHover={{ scale: 1.2, color: "#CA8A04" }}
@@ -375,8 +366,6 @@ const Landing = () => {
                     <Mail size={20} />
                   </motion.a>
                 )}
-
-                {/* LinkedIn */}
                 {s.linkedin && (
                   <motion.a
                     whileHover={{ scale: 1.2, color: "#2563EB" }}
@@ -388,8 +377,6 @@ const Landing = () => {
                     <Linkedin size={18} />
                   </motion.a>
                 )}
-
-                {/* GitHub */}
                 {s.github && (
                   <motion.a
                     whileHover={{ scale: 1.2, color: "#171717" }}

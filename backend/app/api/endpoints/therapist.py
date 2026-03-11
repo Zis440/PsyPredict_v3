@@ -5,7 +5,7 @@ Full inference pipeline:
   2. Text emotion classification (DistilBERT)
   3. Crisis evaluation (zero-shot NLI) — override if triggered
   4. Multimodal fusion (text + face)
-  5. Ollama/LLaMA 3 structured report generation
+  5. Ollama/Phi-3.5 Mini structured report generation
   6. PsychReport JSON schema validation
   7. Streaming response option
 """
@@ -52,7 +52,7 @@ EMOTION_TO_CONDITION: dict[str, str] = {
 # POST /api/chat
 # ---------------------------------------------------------------------------
 
-@router.post("/chat", response_model=ChatResponse)
+@router.post("/chat")
 async def chat(req: ChatRequest):  # type: ignore[misc]
     """
     Main inference endpoint.
@@ -98,16 +98,13 @@ async def chat(req: ChatRequest):  # type: ignore[misc]
 
     # ── Step 4: Streaming Response ───────────────────────────────────────────
     if req.stream:
-        import asyncio as _asyncio
         async def stream_generator():
-            accumulated = ""
             async for token in ollama_engine.generate_stream(
                 user_text=user_text,
                 face_emotion=face_emotion,
                 history=history,
                 text_emotion_summary=text_emotion_summary,
             ):
-                accumulated += token
                 yield token
 
         return StreamingResponse(stream_generator(), media_type="text/plain")

@@ -11,6 +11,7 @@ Replaces Flask. Key features:
 """
 from __future__ import annotations
 
+import asyncio
 import logging
 import sys
 from contextlib import asynccontextmanager
@@ -27,6 +28,15 @@ from app.api.endpoints.facial import router as facial_router
 from app.api.endpoints.remedies import router as remedies_router
 from app.api.endpoints.therapist import router as therapist_router
 from app.api.endpoints.analysis import router as analysis_router
+
+# ---------------------------------------------------------------------------
+# Windows asyncio fix — prevents noisy "ConnectionResetError: [WinError 10054]"
+# when a streaming client disconnects before the response finishes.
+# SelectorEventLoop handles abrupt pipe closures gracefully unlike the default
+# ProactorEventLoop on Windows.
+# ---------------------------------------------------------------------------
+if sys.platform == "win32":
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 settings = get_settings()
 

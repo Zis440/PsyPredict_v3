@@ -1,5 +1,5 @@
 """
-ollama_engine.py — PsyPredict Local LLM Engine
+ollama_engine.py — PsyPredict Local LLM Engine (Phi-3.5 Mini)
 Async Ollama client with:
   - Structured JSON output enforced via schema-in-prompt + Ollama format param
   - Context window trimming
@@ -97,47 +97,40 @@ FACE_DISTRESS_MAP: dict[str, float] = {
 
 class OllamaEngine:
     """
-    Production async LLM engine backed by local Ollama/LLaMA 3.
+    Production async LLM engine backed by local Ollama/Phi-3.5 Mini.
     """
 
     def __init__(self) -> None:
         self.settings = get_settings()
         self._client: Optional[httpx.AsyncClient] = None
-        self._local_llm: Optional[any] = None  # llama_cpp.Llama instance
+
+    def _make_client(self, stream: bool = False) -> httpx.AsyncClient:
+        """Create a fresh httpx client. For streaming, read timeout is None (unbounded)."""
+        read_timeout = None if stream else float(self.settings.OLLAMA_TIMEOUT_S)
+        return httpx.AsyncClient(
+            base_url=self.settings.OLLAMA_BASE_URL,
+            timeout=httpx.Timeout(
+                connect=10.0,
+                read=read_timeout,
+                write=30.0,
+                pool=5.0,
+            ),
+        )
 
     @property
     def client(self) -> httpx.AsyncClient:
         if self._client is None or self._client.is_closed:
-            self._client = httpx.AsyncClient(
-                base_url=self.settings.OLLAMA_BASE_URL,
-                timeout=httpx.Timeout(
-                    connect=10.0,
-                    read=self.settings.OLLAMA_TIMEOUT_S,
-                    write=30.0,
-                    pool=5.0,
-                ),
-            )
+            self._client = self._make_client(stream=False)
         return self._client
 
-    def _get_local_llm(self):
-        """Lazy load llama-cpp-python model."""
-        if self._local_llm is None:
+    async def _reset_client(self) -> None:
+        """Close and discard the current client so the next call gets a fresh one."""
+        if self._client and not self._client.is_closed:
             try:
-                from llama_cpp import Llama
-                logger.info("Loading local GGUF model from %s", self.settings.GGUF_MODEL_PATH)
-                self._local_llm = Llama(
-                    model_path=self.settings.GGUF_MODEL_PATH,
-                    n_ctx=self.settings.LLM_CONTEXT_SIZE,
-                    n_threads=os.cpu_count() or 4,
-                    verbose=False
-                )
-            except ImportError:
-                logger.error("llama-cpp-python not installed. Cannot use embedded LLM.")
-                raise RuntimeError("llama-cpp-python not installed")
-            except Exception as exc:
-                logger.error("Failed to load local GGUF model: %s", exc)
-                raise
-        return self._local_llm
+                await self._client.aclose()
+            except Exception:
+                pass
+        self._client = None
 
     async def close(self) -> None:
         if self._client and not self._client.is_closed:
@@ -254,61 +247,28 @@ class OllamaEngine:
         text_emotion_summary: Optional[str] = None,
     ) -> tuple[str, PsychReport]:
         """
-        Calls either Ollama API or Embedded LLM based on settings, 
-        with automatic fallback to local if Ollama is unreachable.
+        Calls external Ollama API with early reachability check.
         """
-        # If user explicitly wants embedded mode
-        if self.settings.USE_EMBEDDED_LLM:
-            return await self._generate_local(user_text, face_emotion, history, text_emotion_summary)
-        
-        # Otherwise try Ollama, fallback to local if it fails and GGUF is available
-        try:
-            reply, report = await self._generate_ollama(user_text, face_emotion, history, text_emotion_summary)
-            # If _generate_ollama returned the hardcoded fallback string, it failed its retries
-            if "inference service is temporarily unavailable" in reply:
-                # Check for GGUF before giving up
-                if os.path.exists(self.settings.GGUF_MODEL_PATH):
-                    logger.info("Ollama service unreachable after retries, falling back to GGUF.")
-                    return await self._generate_local(user_text, face_emotion, history, text_emotion_summary)
-            return reply, report
-        except Exception as exc:
-            if os.path.exists(self.settings.GGUF_MODEL_PATH):
-                logger.info("Ollama failed, falling back to embedded GGUF model: %s", exc)
-                return await self._generate_local(user_text, face_emotion, history, text_emotion_summary)
-            else:
-                logger.error("Ollama failed and no GGUF model found for fallback at %s", self.settings.GGUF_MODEL_PATH)
-                return (
-                    "The inference service is temporarily unavailable and no local fallback is configured.",
-                    fallback_report(),
-                )
-
-    async def _generate_local(
-        self,
-        user_text: str,
-        face_emotion: str,
-        history: Optional[List[ConversationMessage]],
-        text_emotion_summary: Optional[str]
-    ) -> tuple[str, PsychReport]:
-        """Embedded generation via llama-cpp-python."""
-        if history is None: history = []
-        prompt = self._build_prompt(user_text, face_emotion, history, text_emotion_summary)
-        
-        try:
-            llm = self._get_local_llm()
-            # Run blocking LLM call in a separate thread
-            response = await asyncio.to_thread(
-                llm,
-                prompt=prompt,
-                max_tokens=600,
-                temperature=0.2,
-                top_p=0.9,
-                stop=["USER:", "CURRENT USER INPUT:"]
+        # Fast-fail: check reachability before waiting for full timeout
+        if not await self.is_reachable():
+            logger.warning(
+                "Ollama unreachable at %s — skipping inference, returning fallback.",
+                self.settings.OLLAMA_BASE_URL,
             )
-            raw_text = response["choices"][0]["text"]
-            return self._parse_response(raw_text)
+            return (
+                "The inference service is currently offline. Please ensure Ollama is running "
+                f"at {self.settings.OLLAMA_BASE_URL} with model '{self.settings.OLLAMA_MODEL}'.",
+                fallback_report(),
+            )
+        try:
+            return await self._generate_ollama(user_text, face_emotion, history, text_emotion_summary)
         except Exception as exc:
-            logger.error("Embedded local LLM failed: %s", exc)
-            return "The local inference service encountered an error.", fallback_report()
+            logger.error("Ollama API call failed entirely: %s", exc)
+            await self._reset_client()
+            return (
+                "The inference service is temporarily unavailable. Please verify your external Ollama server is running.",
+                fallback_report(),
+            )
 
     async def _generate_ollama(
         self,
@@ -327,9 +287,9 @@ class OllamaEngine:
             "prompt": prompt,
             "stream": False,
             "options": {
-                "temperature": 0.2,      # Low temp for determinism
+                "temperature": 0.2,
                 "top_p": 0.9,
-                "num_ctx": 4096,
+                "num_ctx": 8192,   # Match model's full context window
                 "stop": [],
             },
         }
@@ -355,6 +315,7 @@ class OllamaEngine:
             except httpx.TimeoutException as exc:
                 last_error = exc
                 logger.warning("Ollama timeout on attempt %d: %s", attempt, exc)
+                await self._reset_client()  # Reset client after timeout
             except httpx.HTTPStatusError as exc:
                 last_error = exc
                 logger.error("Ollama HTTP error %s: %s", exc.response.status_code, exc)
@@ -362,6 +323,7 @@ class OllamaEngine:
             except Exception as exc:
                 last_error = exc
                 logger.error("Ollama unexpected error: %s", exc)
+                await self._reset_client()
 
             if attempt < self.settings.OLLAMA_RETRIES:
                 await asyncio.sleep(delay)
@@ -388,45 +350,27 @@ class OllamaEngine:
         text_emotion_summary: Optional[str] = None,
     ) -> AsyncIterator[str]:
         """
-        Yields raw text chunks as they arrive from either Ollama or Embedded LLM.
+        Yields raw text chunks as they arrive from External Ollama.
+        Fast-fails with a clear message if Ollama is unreachable.
         """
-        if self.settings.USE_EMBEDDED_LLM:
-            async for chunk in self._generate_stream_local(user_text, face_emotion, history, text_emotion_summary):
-                yield chunk
-        else:
-            async for chunk in self._generate_stream_ollama(user_text, face_emotion, history, text_emotion_summary):
-                yield chunk
-
-    async def _generate_stream_local(
-        self,
-        user_text: str,
-        face_emotion: str,
-        history: Optional[List[ConversationMessage]],
-        text_emotion_summary: Optional[str]
-    ) -> AsyncIterator[str]:
-        """Embedded streaming via llama-cpp-python."""
-        if history is None: history = []
-        prompt = self._build_prompt(user_text, face_emotion, history, text_emotion_summary)
-        
-        try:
-            llm = self._get_local_llm()
-            # llama-cpp-python streaming is synchronous, so we need to wrap it
-            stream = llm(
-                prompt=prompt,
-                max_tokens=600,
-                temperature=0.2,
-                top_p=0.9,
-                stream=True,
-                stop=["USER:", "CURRENT USER INPUT:"]
+        # Early reachability check — prevents indefinite hang on dead server
+        if not await self.is_reachable():
+            logger.warning(
+                "Ollama unreachable at %s — aborting stream, returning fallback.",
+                self.settings.OLLAMA_BASE_URL,
             )
-            for chunk in stream:
-                token = chunk["choices"][0]["text"]
-                if token:
-                    yield token
-                await asyncio.sleep(0) # Yield control
-        except Exception as exc:
-            logger.error("Embedded streaming failed: %s", exc)
-            yield "\n[Local inference error]"
+            fallback_msg = (
+                f"The inference service is currently offline. "
+                f"Please ensure Ollama is running at {self.settings.OLLAMA_BASE_URL} "
+                f"with model '{self.settings.OLLAMA_MODEL}'.\n"
+                f"---JSON---\n"
+                + __import__('json').dumps(fallback_report().model_dump())
+            )
+            yield fallback_msg
+            return
+
+        async for chunk in self._generate_stream_ollama(user_text, face_emotion, history, text_emotion_summary):
+            yield chunk
 
     async def _generate_stream_ollama(
         self,
@@ -437,7 +381,7 @@ class OllamaEngine:
     ) -> AsyncIterator[str]:
         """
         Yields raw text chunks as they arrive from Ollama.
-        With automatic fallback to local streaming if Ollama is unreachable.
+        Uses an unbounded read timeout so slow CPU inference never times out mid-stream.
         """
         if history is None:
             history = []
@@ -448,11 +392,18 @@ class OllamaEngine:
             "model": self.settings.OLLAMA_MODEL,
             "prompt": prompt,
             "stream": True,
-            "options": {"temperature": 0.2, "top_p": 0.9, "num_ctx": 4096},
+            "options": {
+                "temperature": 0.2,
+                "top_p": 0.9,
+                "num_ctx": 8192,   # Match model's full context window
+            },
         }
 
+        # Use a dedicated streaming client with no read timeout
+        # (tokens trickle in slowly on CPU — we must not cut the connection)
+        stream_client = self._make_client(stream=True)
         try:
-            async with self.client.stream("POST", "/api/generate", json=payload) as resp:
+            async with stream_client.stream("POST", "/api/generate", json=payload) as resp:
                 resp.raise_for_status()
                 async for line in resp.aiter_lines():
                     if not line.strip():
@@ -468,12 +419,9 @@ class OllamaEngine:
                         continue
         except Exception as exc:
             logger.error("Ollama streaming failed: %s", exc)
-            if os.path.exists(self.settings.GGUF_MODEL_PATH):
-                logger.info("Falling back to local GGUF streaming.")
-                async for chunk in self._generate_stream_local(user_text, face_emotion, history, text_emotion_summary):
-                    yield chunk
-            else:
-                yield "\n[Inference service error — please retry]\n"
+            yield "\n[Inference error — Ollama took too long or disconnected. Try again.]\n"
+        finally:
+            await stream_client.aclose()
 
 
 # ---------------------------------------------------------------------------

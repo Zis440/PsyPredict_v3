@@ -1,0 +1,34 @@
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+.pytest_cache/
+
+# ── Virtual Environments ─────────────────────────────────────────────────────
+venv/
+.venv/
+env/
+
+# ── Secrets (never bake into image) ──────────────────────────────────────────
+.env
+.env.*
+
+# ── Git ───────────────────────────────────────────────────────────────────────
+.git/
+.gitignore
+.gitattributes
+
+# ── IDE / OS ──────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# ── Notebooks / Dev tools ────────────────────────────────────────────────────
+notebooks/
+*.ipynb
+
+# ── README (not needed in image) ─────────────────────────────────────────────
+README.md

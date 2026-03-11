@@ -4,21 +4,36 @@ import { useUser } from '@clerk/react';
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Link } from 'react-router-dom';
-import { MessageSquare, Calendar, ChevronRight } from 'lucide-react';
+import { MessageSquare, Calendar, ChevronRight, Clock } from 'lucide-react';
+import { useGuestMode } from '../context/GuestModeContext';
 
 
 const History: React.FC = () => {
     const { user } = useUser();
+    const { isGuestMode, guestConversations } = useGuestMode();
     const [conversations, setConversations] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
-    // Convex query for conversations
+    // Convex query — skipped entirely in guest mode
     const convexConversations = useQuery(
         api.conversations.list,
-        user ? {} : "skip"
+        !isGuestMode && user ? {} : "skip"
     );
 
     useEffect(() => {
+        if (isGuestMode) {
+            const sorted = [...guestConversations]
+                .map((c) => ({
+                    id: c.id,
+                    title: c.title,
+                    created_at: c.createdAt,
+                }))
+                .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+            setConversations(sorted);
+            setLoading(false);
+            return;
+        }
+
         if (!user) return;
 
         if (convexConversations) {
@@ -32,7 +47,7 @@ const History: React.FC = () => {
             setConversations(sorted);
         }
         setLoading(false);
-    }, [user, convexConversations]);
+    }, [user, convexConversations, isGuestMode, guestConversations]);
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -43,6 +58,17 @@ const History: React.FC = () => {
                     <h1 className="text-2xl font-bold text-gray-900">Consultation History</h1>
                     <p className="text-gray-500 mt-2">View your past conversations and generated prescriptions.</p>
                 </div>
+
+                {/* Guest mode notice */}
+                {isGuestMode && (
+                    <div className="mb-6 flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+                        <Clock size={16} className="text-amber-600 mt-0.5 shrink-0" />
+                        <p className="text-sm text-amber-700">
+                            <span className="font-semibold">Guest Mode:</span> Your conversations are stored temporarily in this session only.
+                            They will be lost when you close the tab or sign in.
+                        </p>
+                    </div>
+                )}
 
                 {loading ? (
                     <div className="flex justify-center py-12">
@@ -72,7 +98,14 @@ const History: React.FC = () => {
                                         <MessageSquare className="text-indigo-600" size={20} />
                                     </div>
                                     <div>
-                                        <h3 className="font-semibold text-gray-900 mb-1">{conv.title || 'Untitled Conversation'}</h3>
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <h3 className="font-semibold text-gray-900">{conv.title || 'Untitled Conversation'}</h3>
+                                            {isGuestMode && (
+                                                <span className="text-[10px] font-medium text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                                                    Temporary
+                                                </span>
+                                            )}
+                                        </div>
                                         <div className="flex items-center gap-2 text-sm text-gray-500">
                                             <Calendar size={14} />
                                             {new Date(conv.created_at).toLocaleDateString(undefined, {

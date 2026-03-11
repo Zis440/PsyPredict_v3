@@ -5,7 +5,7 @@
 ![Status](https://img.shields.io/badge/status-active-success.svg)
 ![Python](https://img.shields.io/badge/backend-FastAPI-009688.svg)
 ![React](https://img.shields.io/badge/frontend-React-cyan.svg)
-![LLaMA](https://img.shields.io/badge/LLM-LLaMA%203%20%28Ollama%29-orange.svg)
+![Phi](https://img.shields.io/badge/LLM-Phi--3.5%20Mini%20%28Ollama%29-orange.svg)
 ![Vercel](https://img.shields.io/badge/frontend-Vercel-black)
 
 ---
@@ -15,7 +15,7 @@
 **PsyPredict** is a fully local, production-grade multimodal mental health AI system. It combines:
 
 - **DistilBERT** multi-label text emotion classification
-- **LLaMA 3** via Ollama for structured clinical reasoning (no external API)
+- **Phi-3.5 Mini** via Ollama for structured clinical reasoning (no external API)
 - **Keras CNN** facial emotion detection (live webcam)
 - **Zero-shot NLI** crisis detection with automatic override
 - **Weighted multimodal fusion** for a combined distress risk score
@@ -77,7 +77,7 @@ User Text Input
       │       ├─ text_distress × 0.65
       │       └─ face_distress × 0.35 → final_risk_score
       │
-      └─► Ollama / LLaMA 3 (local, structured JSON)
+      └─► Ollama / Phi-3.5 Mini (local, structured JSON)
               └─► PsychReport (Pydantic validated)
 
 Webcam → Keras CNN → face emotion score → Fusion Engine
@@ -91,7 +91,7 @@ Webcam → Keras CNN → face emotion score → Fusion Engine
 |-----------|-----------|
 | **Frontend** | React, Vite, TypeScript, TailwindCSS |
 | **Backend** | Python, FastAPI, Uvicorn |
-| **LLM** | LLaMA 3 via Ollama (local, no external API) |
+| **LLM** | Phi-3.5 Mini via Ollama (local, no external API) |
 | **Text Emotion** | DistilBERT (`bhadresh-savani/distilbert-base-uncased-emotion`) |
 | **Crisis Detection** | MiniLM Zero-Shot NLI |
 | **Face Emotion** | OpenCV + Custom Keras CNN |
@@ -114,7 +114,7 @@ PsyPredict/
 │   │   │   ├── haarcascade_frontalface_default.xml
 │   │   │   └── MEDICATION.csv
 │   │   ├── services/
-│   │   │   ├── ollama_engine.py       # LLaMA 3 async client
+│   │   │   ├── ollama_engine.py       # Phi-3.5 Mini async client
 │   │   │   ├── text_emotion_engine.py # DistilBERT text emotion
 │   │   │   ├── crisis_engine.py       # Zero-shot NLI crisis detection
 │   │   │   ├── fusion_engine.py       # Multimodal weighted fusion
@@ -152,8 +152,8 @@ PsyPredict/
 winget install Ollama.Ollama   # Windows
 # or: brew install ollama       # macOS
 
-# Pull LLaMA 3 model (~4.7 GB)
-ollama pull llama3
+# Pull Phi-3.5 Mini model (~2.2 GB)
+ollama pull phi3.5:3.8b-mini-instruct-q4_0
 
 # Verify
 ollama list
@@ -221,7 +221,7 @@ ollama serve
 
 ```env
 OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=llama3
+OLLAMA_MODEL=phi3.5:3.8b-mini-instruct-q4_0
 OLLAMA_TIMEOUT_S=90
 DISTILBERT_MODEL=bhadresh-savani/distilbert-base-uncased-emotion
 CRISIS_THRESHOLD=0.65

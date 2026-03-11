@@ -7,15 +7,15 @@ from functools import lru_cache
 
 
 class Settings(BaseSettings):
-    # Ollama / LLM
-    OLLAMA_BASE_URL: str = "http://localhost:11434"
-    OLLAMA_MODEL: str = "llama3"
-    OLLAMA_TIMEOUT_S: int = 120
+    # Ollama / LLM (Centralized API)
+    # Update this to your DigitalOcean/VPS IP address where Ollama is running
+    # Default is localhost (e.g. for development), but in production it should be like:
+    # OLLAMA_BASE_URL: str = "http://123.45.67.89:11434"
+    OLLAMA_BASE_URL: str = "http://127.0.0.1:11434"
+    OLLAMA_MODEL: str = "phi3.5:3.8b-mini-instruct-q4_0"
+    OLLAMA_TIMEOUT_S: int = 90
     
-    # --- Embedded LLM Settings (for Docker/HF Spaces) ---
-    USE_EMBEDDED_LLM: bool = False  # Set to True in .env for Docker/HF Spaces
-    GGUF_MODEL_PATH: str = "app/ml_assets/llama-3-8b-instruct.Q4_K_M.gguf"
-    LLM_CONTEXT_SIZE: int = 2048
+    # Retry logic for external LLM API
     OLLAMA_RETRIES: int = 3
     OLLAMA_RETRY_DELAY_S: float = 2.0
 

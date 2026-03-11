@@ -6,15 +6,10 @@ from huggingface_hub import hf_hub_download
 MODEL_ID = "10GWSogJNKlPlTeWtJkDq_zc4roB1Vmnu" # Keras Face Emotion
 CSV_ID   = "1bJ8C1BY0rvPNKuWcBgqiUtiSzHziZokH" # Medication CSV
 
-# Llama-3-8B-Instruct GGUF (Quantized for CPU/RAM efficiency)
-LLAMA_REPO = "MaziyarPanahi/Llama-3-8B-Instruct-v0.1-GGUF"
-LLAMA_FILE = "Llama-3-8B-Instruct-v0.1.Q4_K_M.gguf"
-
 # Destinations
 ML_ASSETS = "app/ml_assets"
 FACE_MODEL_PATH = os.path.join(ML_ASSETS, "emotion_model_trained.h5")
 MEDS_CSV_PATH = os.path.join(ML_ASSETS, "MEDICATION.csv")
-LLAMA_GGUF_PATH = os.path.join(ML_ASSETS, "llama-3-8b-instruct.Q4_K_M.gguf")
 
 # HF Transformers (Downloaded via snapshot_download for full directory)
 CRISIS_MODEL_REPO = "cross-encoder/nli-MiniLM2-L6-H768"
@@ -69,13 +64,7 @@ if __name__ == "__main__":
     download_drive_file(MODEL_ID, FACE_MODEL_PATH)
     download_drive_file(CSV_ID, MEDS_CSV_PATH)
     
-    # 2. HF Models (Llama 3)
-    try:
-        download_hf_model(LLAMA_REPO, LLAMA_FILE, LLAMA_GGUF_PATH)
-    except Exception as e:
-        print(f"⚠️ HF LLaMA Download failed (expected on local dev if no internet): {e}")
-
-    # 3. HF Transformers Pipeline Models
+    # 2. HF Transformers Pipeline Models
     try:
         download_hf_directory(CRISIS_MODEL_REPO, CRISIS_MODEL_PATH)
         download_hf_directory(DISTILBERT_MODEL_REPO, DISTILBERT_MODEL_PATH)
