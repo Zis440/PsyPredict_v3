@@ -1,5 +1,5 @@
 ---
-title: PsyPredict Backend
+title: PsyPredict [Backend]
 emoji: 🧠
 colorFrom: indigo
 colorTo: purple
