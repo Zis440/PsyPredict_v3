@@ -7,7 +7,7 @@ sdk: docker
 pinned: false
 ---
 
-# PsyPredict Backend
+# PsyPredict - Backend
 
 **FastAPI** backend for PsyPredict — production-grade multimodal clinical AI system.
 
