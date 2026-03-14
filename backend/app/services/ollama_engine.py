@@ -1,20 +1,18 @@
 """
-ollama_engine.py — PsyPredict Local LLM Engine (Llama3)
-Async Ollama client with:
-  - Structured JSON output enforced via schema-in-prompt + Ollama format param
-  - Context window trimming
-  - Retry with exponential backoff
-  - Graceful fallback on Ollama unreachability
+ollama_engine.py — PsyPredict LLM Engine (Groq / Llama3.3-70B)
+Replaces Ollama with Groq's API. Same interface — no other files need changing.
+Features:
+  - Groq API via httpx (OpenAI-compatible endpoint)
+  - Structured JSON output via ---JSON--- marker + PsychReport schema
   - Streaming support
-  - Zero external API dependency
+  - Retry with exponential backoff
+  - Graceful fallback if API key missing or Groq unreachable
 """
 from __future__ import annotations
 
 import asyncio
 import json
 import logging
-import os
-import time
 from typing import AsyncIterator, List, Optional
 
 import httpx
@@ -30,7 +28,12 @@ from app.schemas import (
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
-# System Prompt — Deterministic, clinical, no filler
+# Groq API base URL (OpenAI-compatible)
+# ---------------------------------------------------------------------------
+GROQ_API_BASE = "https://api.groq.com/openai/v1"
+
+# ---------------------------------------------------------------------------
+# System Prompt
 # ---------------------------------------------------------------------------
 
 SYSTEM_PROMPT = """You are a compassionate clinical AI therapist integrated into PsyPredict, a mental health platform.
@@ -79,9 +82,8 @@ Output format:
 { ...psych report json... }
 """
 
-
 # ---------------------------------------------------------------------------
-# FACE → DISTRESS SCORE mapping (calibrated, not heuristic)
+# FACE → DISTRESS SCORE mapping
 # ---------------------------------------------------------------------------
 
 FACE_DISTRESS_MAP: dict[str, float] = {
@@ -94,28 +96,27 @@ FACE_DISTRESS_MAP: dict[str, float] = {
     "happy": 0.05,
 }
 
-# ---------------------------------------------------------------------------
-# Context window — keep small for fast CPU inference on t3.large
-# 2048 tokens is sufficient for the system prompt + short conversation history
-# and cuts inference time from 3-5 min down to 30-60 seconds on CPU
-# ---------------------------------------------------------------------------
-NUM_CTX = 2048
-
 
 class OllamaEngine:
     """
-    Production async LLM engine backed by local Ollama/Llama3.
+    LLM engine backed by Groq API (Llama3.3-70B).
+    Named OllamaEngine to preserve all existing imports across the codebase.
     """
 
     def __init__(self) -> None:
         self.settings = get_settings()
-        self._client: Optional[httpx.AsyncClient] = None
+
+    def _headers(self) -> dict:
+        return {
+            "Authorization": f"Bearer {self.settings.GROQ_API_KEY}",
+            "Content-Type": "application/json",
+        }
 
     def _make_client(self, stream: bool = False) -> httpx.AsyncClient:
-        """Create a fresh httpx client. For streaming, read timeout is None (unbounded)."""
         read_timeout = None if stream else float(self.settings.OLLAMA_TIMEOUT_S)
         return httpx.AsyncClient(
-            base_url=self.settings.OLLAMA_BASE_URL,
+            base_url=GROQ_API_BASE,
+            headers=self._headers(),
             timeout=httpx.Timeout(
                 connect=10.0,
                 read=read_timeout,
@@ -124,36 +125,24 @@ class OllamaEngine:
             ),
         )
 
-    @property
-    def client(self) -> httpx.AsyncClient:
-        if self._client is None or self._client.is_closed:
-            self._client = self._make_client(stream=False)
-        return self._client
-
-    async def _reset_client(self) -> None:
-        """Close and discard the current client so the next call gets a fresh one."""
-        if self._client and not self._client.is_closed:
-            try:
-                await self._client.aclose()
-            except Exception:
-                pass
-        self._client = None
-
-    async def close(self) -> None:
-        if self._client and not self._client.is_closed:
-            await self._client.aclose()
-
     # ------------------------------------------------------------------
     # Health Check
     # ------------------------------------------------------------------
 
     async def is_reachable(self) -> bool:
-        """Returns True if Ollama API is reachable."""
+        """Returns True if Groq API key is set and endpoint is reachable."""
+        if not self.settings.GROQ_API_KEY:
+            logger.warning("GROQ_API_KEY is not set.")
+            return False
         try:
-            resp = await self.client.get("/api/tags", timeout=5.0)
-            return resp.status_code == 200
+            async with self._make_client() as client:
+                resp = await client.get("/models", timeout=5.0)
+                return resp.status_code == 200
         except Exception:
             return False
+
+    async def close(self) -> None:
+        pass
 
     # ------------------------------------------------------------------
     # Context Window Trimming
@@ -162,53 +151,55 @@ class OllamaEngine:
     def _trim_history(
         self, history: List[ConversationMessage]
     ) -> List[ConversationMessage]:
-        """Keep the last MAX_CONTEXT_TURNS message pairs."""
         max_turns = self.settings.MAX_CONTEXT_TURNS
         if len(history) <= max_turns * 2:
             return history
         return history[-(max_turns * 2):]
 
     # ------------------------------------------------------------------
-    # Prompt Builder
+    # Messages Builder (Groq uses chat format, not raw prompt)
     # ------------------------------------------------------------------
 
-    def _build_prompt(
+    def _build_messages(
         self,
         user_text: str,
         face_emotion: str,
         history: List[ConversationMessage],
         text_emotion_summary: Optional[str] = None,
-    ) -> str:
+    ) -> list:
+        """
+        Builds the messages array for Groq's chat completions API.
+        System prompt is a dedicated system message.
+        History becomes alternating user/assistant messages.
+        Multimodal context is appended to the final user message.
+        """
+        messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+
         trimmed = self._trim_history(history)
-        history_block = "\n".join(
-            f"[{msg.role.upper()}]: {msg.content}" for msg in trimmed
-        )
+        for msg in trimmed:
+            messages.append({
+                "role": msg.role.value,
+                "content": msg.content,
+            })
 
         face_distress = FACE_DISTRESS_MAP.get(face_emotion.lower(), 0.20)
         multimodal_ctx = (
-            f"MULTIMODAL CONTEXT:\n"
-            f"  Face emotion (webcam): {face_emotion} (distress score: {face_distress:.2f})\n"
+            f"\n\n[MULTIMODAL CONTEXT]\n"
+            f"Face emotion (webcam): {face_emotion} (distress score: {face_distress:.2f})\n"
         )
         if text_emotion_summary:
-            multimodal_ctx += f"  Text emotion (DistilBERT): {text_emotion_summary}\n"
+            multimodal_ctx += f"Text emotion (DistilBERT): {text_emotion_summary}\n"
 
-        return (
-            f"{SYSTEM_PROMPT}\n\n"
-            f"CONVERSATION HISTORY:\n{history_block}\n\n"
-            f"{multimodal_ctx}\n"
-            f"CURRENT USER INPUT:\n{user_text}\n\n"
-            "ASSISTANT:"
-        )
+        final_user_content = user_text + multimodal_ctx
+        messages.append({"role": "user", "content": final_user_content})
+
+        return messages
 
     # ------------------------------------------------------------------
     # Parse LLM Output → (reply_text, PsychReport)
     # ------------------------------------------------------------------
 
     def _parse_response(self, raw: str) -> tuple[str, PsychReport]:
-        """
-        Split on ---JSON--- marker and validate the JSON block.
-        Returns (conversational_reply, PsychReport).
-        """
         marker = "---JSON---"
         if marker in raw:
             parts = raw.split(marker, 1)
@@ -229,7 +220,7 @@ class OllamaEngine:
             report = PsychReport(**data)
         except (json.JSONDecodeError, ValueError, KeyError) as exc:
             logger.warning(
-                "Failed to parse PsychReport from LLM output: %s | raw=%r",
+                "Failed to parse PsychReport from Groq output: %s | raw=%r",
                 exc,
                 json_block[:500],
             )
@@ -250,48 +241,21 @@ class OllamaEngine:
         history: Optional[List[ConversationMessage]] = None,
         text_emotion_summary: Optional[str] = None,
     ) -> tuple[str, PsychReport]:
-        if not await self.is_reachable():
-            logger.warning(
-                "Ollama unreachable at %s — skipping inference, returning fallback.",
-                self.settings.OLLAMA_BASE_URL,
-            )
-            return (
-                "The inference service is currently offline. Please ensure Ollama is running "
-                f"at {self.settings.OLLAMA_BASE_URL} with model '{self.settings.OLLAMA_MODEL}'.",
-                fallback_report(),
-            )
-        try:
-            return await self._generate_ollama(user_text, face_emotion, history, text_emotion_summary)
-        except Exception as exc:
-            logger.error("Ollama API call failed entirely: %s", exc)
-            await self._reset_client()
-            return (
-                "The inference service is temporarily unavailable. Please verify your external Ollama server is running.",
-                fallback_report(),
-            )
+        if not self.settings.GROQ_API_KEY:
+            logger.warning("GROQ_API_KEY not set — returning fallback.")
+            return ("Groq API key is not configured.", fallback_report())
 
-    async def _generate_ollama(
-        self,
-        user_text: str,
-        face_emotion: str,
-        history: Optional[List[ConversationMessage]],
-        text_emotion_summary: Optional[str]
-    ) -> tuple[str, PsychReport]:
         if history is None:
             history = []
 
-        prompt = self._build_prompt(user_text, face_emotion, history, text_emotion_summary)
+        messages = self._build_messages(user_text, face_emotion, history, text_emotion_summary)
 
         payload = {
-            "model": self.settings.OLLAMA_MODEL,
-            "prompt": prompt,
+            "model": self.settings.GROQ_MODEL,
+            "messages": messages,
+            "temperature": 0.2,
+            "max_tokens": 1024,
             "stream": False,
-            "options": {
-                "temperature": 0.2,
-                "top_p": 0.9,
-                "num_ctx": NUM_CTX,
-                "stop": [],
-            },
         }
 
         last_error: Optional[Exception] = None
@@ -299,43 +263,31 @@ class OllamaEngine:
 
         for attempt in range(1, self.settings.OLLAMA_RETRIES + 1):
             try:
-                logger.info(
-                    "Ollama generate attempt %d/%d",
-                    attempt,
-                    self.settings.OLLAMA_RETRIES,
-                )
-                resp = await self.client.post("/api/generate", json=payload)
-                resp.raise_for_status()
-                data = resp.json()
-                raw_text: str = data.get("response", "")
-                reply, report = self._parse_response(raw_text)
-                return reply, report
+                logger.info("Groq generate attempt %d/%d", attempt, self.settings.OLLAMA_RETRIES)
+                async with self._make_client() as client:
+                    resp = await client.post("/chat/completions", json=payload)
+                    resp.raise_for_status()
+                    data = resp.json()
+                    raw_text: str = data["choices"][0]["message"]["content"]
+                    return self._parse_response(raw_text)
 
             except httpx.TimeoutException as exc:
                 last_error = exc
-                logger.warning("Ollama timeout on attempt %d: %s", attempt, exc)
-                await self._reset_client()
+                logger.warning("Groq timeout on attempt %d: %s", attempt, exc)
             except httpx.HTTPStatusError as exc:
                 last_error = exc
-                logger.error("Ollama HTTP error %s: %s", exc.response.status_code, exc)
+                logger.error("Groq HTTP error %s: %s", exc.response.status_code, exc.response.text)
                 break
             except Exception as exc:
                 last_error = exc
-                logger.error("Ollama unexpected error: %s", exc)
-                await self._reset_client()
+                logger.error("Groq unexpected error: %s", exc)
 
             if attempt < self.settings.OLLAMA_RETRIES:
                 await asyncio.sleep(delay)
                 delay *= 2
 
-        logger.error(
-            "All Ollama attempts failed. Returning fallback. Last error: %s",
-            last_error,
-        )
-        return (
-            "The inference service is temporarily unavailable. Please try again shortly.",
-            fallback_report(),
-        )
+        logger.error("All Groq attempts failed. Last error: %s", last_error)
+        return ("The inference service is temporarily unavailable. Please try again shortly.", fallback_report())
 
     # ------------------------------------------------------------------
     # Generate (streaming)
@@ -348,75 +300,47 @@ class OllamaEngine:
         history: Optional[List[ConversationMessage]] = None,
         text_emotion_summary: Optional[str] = None,
     ) -> AsyncIterator[str]:
-        if not await self.is_reachable():
-            logger.warning(
-                "Ollama unreachable at %s — aborting stream, returning fallback.",
-                self.settings.OLLAMA_BASE_URL,
-            )
-            fallback_msg = (
-                f"The inference service is currently offline. "
-                f"Please ensure Ollama is running at {self.settings.OLLAMA_BASE_URL} "
-                f"with model '{self.settings.OLLAMA_MODEL}'.\n"
-                f"---JSON---\n"
-                + __import__('json').dumps(fallback_report().model_dump())
-            )
-            yield fallback_msg
+        if not self.settings.GROQ_API_KEY:
+            logger.warning("GROQ_API_KEY not set — returning fallback stream.")
+            yield "Groq API key is not configured.\n---JSON---\n" + json.dumps(fallback_report().model_dump())
             return
 
-        async for chunk in self._generate_stream_ollama(user_text, face_emotion, history, text_emotion_summary):
-            yield chunk
-
-    async def _generate_stream_ollama(
-        self,
-        user_text: str,
-        face_emotion: str,
-        history: Optional[List[ConversationMessage]],
-        text_emotion_summary: Optional[str]
-    ) -> AsyncIterator[str]:
-        """
-        Yields raw text chunks as they arrive from Ollama.
-        Uses an unbounded read timeout so slow CPU inference never times out mid-stream.
-        """
         if history is None:
             history = []
 
-        prompt = self._build_prompt(user_text, face_emotion, history, text_emotion_summary)
+        messages = self._build_messages(user_text, face_emotion, history, text_emotion_summary)
 
         payload = {
-            "model": self.settings.OLLAMA_MODEL,
-            "prompt": prompt,
+            "model": self.settings.GROQ_MODEL,
+            "messages": messages,
+            "temperature": 0.2,
+            "max_tokens": 1024,
             "stream": True,
-            "options": {
-                "temperature": 0.2,
-                "top_p": 0.9,
-                "num_ctx": NUM_CTX,
-            },
         }
 
-        stream_client = self._make_client(stream=True)
         try:
-            async with stream_client.stream("POST", "/api/generate", json=payload) as resp:
-                resp.raise_for_status()
-                async for line in resp.aiter_lines():
-                    if not line.strip():
-                        continue
-                    try:
-                        chunk = json.loads(line)
-                        token = chunk.get("response", "")
-                        if token:
-                            yield token
-                        if chunk.get("done"):
+            async with self._make_client(stream=True) as client:
+                async with client.stream("POST", "/chat/completions", json=payload) as resp:
+                    resp.raise_for_status()
+                    async for line in resp.aiter_lines():
+                        if not line.startswith("data: "):
+                            continue
+                        data_str = line[len("data: "):]
+                        if data_str.strip() == "[DONE]":
                             break
-                    except json.JSONDecodeError:
-                        continue
+                        try:
+                            chunk = json.loads(data_str)
+                            token = chunk["choices"][0].get("delta", {}).get("content", "")
+                            if token:
+                                yield token
+                        except (json.JSONDecodeError, KeyError):
+                            continue
         except Exception as exc:
-            logger.error("Ollama streaming failed: %s", exc)
-            yield "\n[Inference error — Ollama took too long or disconnected. Try again.]\n"
-        finally:
-            await stream_client.aclose()
+            logger.error("Groq streaming failed: %s", exc)
+            yield "\n[Inference error — Groq request failed. Try again.]\n"
 
 
 # ---------------------------------------------------------------------------
-# Singleton
+# Singleton — same name so all existing imports work unchanged
 # ---------------------------------------------------------------------------
 ollama_engine = OllamaEngine()

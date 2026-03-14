@@ -30,15 +30,11 @@ opencv-python-headless
 pillow
 
 # ── Deep Learning: TensorFlow CPU (Keras face emotion model) ─────────────────
-# tensorflow-cpu is ~500MB lighter than full tensorflow (no CUDA/ROCm)
 tensorflow-cpu
 pandas
 gdown
 
 # ── Deep Learning: PyTorch CPU + HuggingFace Transformers ────────────────────
-# torch is pre-installed by Dockerfile (CPU wheel from PyTorch index).
-# The line below is kept so `pip install -r requirements.txt` works locally
-# after you have manually installed the CPU torch wheel (see note above).
 torch>=2.0.0 --index-url https://download.pytorch.org/whl/cpu
 transformers>=4.40.0
 sentencepiece==0.1.99
