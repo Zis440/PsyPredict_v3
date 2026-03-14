@@ -40,10 +40,17 @@ datasets/
 /backend/app/ml_assets
 /backend/app/ml_assets/MEDICATION.csv
 
-# NOTE: We do NOT ignore *.h5 or *.keras here because you are using 
+# NOTE: We do NOT ignore *.h5 or *.keras here because you are using
 # Git LFS to track them. If you were NOT using LFS, you would uncomment below:
 # *.h5
 # *.keras
+
+# ========================
+# 🔑 SSH & CLOUD CREDENTIALS
+# ========================
+# AWS EC2 key pair — NEVER commit this to git
+*.pem
+*.ppk
 
 # ========================
 # ⚙️ IDE & OS FILES

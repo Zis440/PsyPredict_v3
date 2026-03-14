@@ -118,7 +118,7 @@ def create_app() -> FastAPI:
         title="PsyPredict API",
         description=(
             "Production-grade multimodal mental health AI system. "
-            "Powered by Phi-3.5 Mini (Ollama) + DistilBERT + Keras CNN facial emotion model."
+            "Powered by Llama3 (Ollama) + DistilBERT + Keras CNN facial emotion model."
         ),
         version="2.0.0",
         lifespan=lifespan,

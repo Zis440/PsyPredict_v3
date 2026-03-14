@@ -5,7 +5,7 @@ Full inference pipeline:
   2. Text emotion classification (DistilBERT)
   3. Crisis evaluation (zero-shot NLI) — override if triggered
   4. Multimodal fusion (text + face)
-  5. Ollama/Phi-3.5 Mini structured report generation
+  5. Ollama/Llama3 structured report generation
   6. PsychReport JSON schema validation
   7. Streaming response option
 """

@@ -5,7 +5,7 @@
 ```
 winget install Ollama.Ollama
 # ollama pull llama3
-ollama pull phi3.5:3.8b-mini-instruct-q4_0
+ollama pull llama3
 ```
 
 ---

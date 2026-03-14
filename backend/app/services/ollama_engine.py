@@ -1,5 +1,5 @@
 """
-ollama_engine.py — PsyPredict Local LLM Engine (Phi-3.5 Mini)
+ollama_engine.py — PsyPredict Local LLM Engine (Llama3)
 Async Ollama client with:
   - Structured JSON output enforced via schema-in-prompt + Ollama format param
   - Context window trimming
@@ -97,7 +97,7 @@ FACE_DISTRESS_MAP: dict[str, float] = {
 
 class OllamaEngine:
     """
-    Production async LLM engine backed by local Ollama/Phi-3.5 Mini.
+    Production async LLM engine backed by local Ollama/Llama3.
     """
 
     def __init__(self) -> None:

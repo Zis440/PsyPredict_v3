@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     # Default is localhost (e.g. for development), but in production it should be like:
     # OLLAMA_BASE_URL: str = "http://123.45.67.89:11434"
     OLLAMA_BASE_URL: str = "http://127.0.0.1:11434"
-    OLLAMA_MODEL: str = "phi3.5:3.8b-mini-instruct-q4_0"
+    OLLAMA_MODEL: str = "llama3"
     OLLAMA_TIMEOUT_S: int = 90
     
     # Retry logic for external LLM API

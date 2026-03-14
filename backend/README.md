@@ -16,7 +16,7 @@ pinned: false
 | Service | Technology |
 |---------|-----------|
 | API Framework | FastAPI + Uvicorn |
-| LLM Inference | Ollama / Phi 3.5 Mini (local) |
+| LLM Inference | Ollama / Llama3 (local) |
 | Text Emotion | DistilBERT (`bhadresh-savani/distilbert-base-uncased-emotion`) |
 | Crisis Detection | Zero-shot NLI (MiniLM) |
 | Face Emotion | Keras CNN (custom trained, `emotion_model_trained.h5`) |
@@ -37,7 +37,7 @@ pinned: false
 ```bash
 # 1. Install Ollama + LLaMA 3 (one-time)
 winget install Ollama.Ollama
-ollama pull phi3.5:3.8b-mini-instruct-q4_0
+ollama pull llama3
 
 # 2. Install dependencies
 pip install -r requirements.txt
