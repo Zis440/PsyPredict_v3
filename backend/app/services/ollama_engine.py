@@ -94,6 +94,13 @@ FACE_DISTRESS_MAP: dict[str, float] = {
     "happy": 0.05,
 }
 
+# ---------------------------------------------------------------------------
+# Context window — keep small for fast CPU inference on t3.large
+# 2048 tokens is sufficient for the system prompt + short conversation history
+# and cuts inference time from 3-5 min down to 30-60 seconds on CPU
+# ---------------------------------------------------------------------------
+NUM_CTX = 2048
+
 
 class OllamaEngine:
     """
@@ -208,11 +215,9 @@ class OllamaEngine:
             reply_text = parts[0].strip()
             json_block = parts[1].strip()
         else:
-            # Try to find JSON object in the raw output
             reply_text = ""
             json_block = raw.strip()
 
-        # Extract JSON object (handle markdown code fences)
         if json_block.startswith("```"):
             lines = json_block.split("\n")
             json_block = "\n".join(
@@ -228,7 +233,6 @@ class OllamaEngine:
                 exc,
                 json_block[:500],
             )
-            # Return partial fallback
             report = fallback_report()
             if not reply_text:
                 reply_text = raw.strip()
@@ -246,10 +250,6 @@ class OllamaEngine:
         history: Optional[List[ConversationMessage]] = None,
         text_emotion_summary: Optional[str] = None,
     ) -> tuple[str, PsychReport]:
-        """
-        Calls external Ollama API with early reachability check.
-        """
-        # Fast-fail: check reachability before waiting for full timeout
         if not await self.is_reachable():
             logger.warning(
                 "Ollama unreachable at %s — skipping inference, returning fallback.",
@@ -277,8 +277,8 @@ class OllamaEngine:
         history: Optional[List[ConversationMessage]],
         text_emotion_summary: Optional[str]
     ) -> tuple[str, PsychReport]:
-        """Existing Ollama HTTP logic."""
-        if history is None: history = []
+        if history is None:
+            history = []
 
         prompt = self._build_prompt(user_text, face_emotion, history, text_emotion_summary)
 
@@ -289,7 +289,7 @@ class OllamaEngine:
             "options": {
                 "temperature": 0.2,
                 "top_p": 0.9,
-                "num_ctx": 8192,   # Match model's full context window
+                "num_ctx": NUM_CTX,
                 "stop": [],
             },
         }
@@ -308,18 +308,17 @@ class OllamaEngine:
                 resp.raise_for_status()
                 data = resp.json()
                 raw_text: str = data.get("response", "")
-
                 reply, report = self._parse_response(raw_text)
                 return reply, report
 
             except httpx.TimeoutException as exc:
                 last_error = exc
                 logger.warning("Ollama timeout on attempt %d: %s", attempt, exc)
-                await self._reset_client()  # Reset client after timeout
+                await self._reset_client()
             except httpx.HTTPStatusError as exc:
                 last_error = exc
                 logger.error("Ollama HTTP error %s: %s", exc.response.status_code, exc)
-                break  # Non-retryable HTTP error
+                break
             except Exception as exc:
                 last_error = exc
                 logger.error("Ollama unexpected error: %s", exc)
@@ -327,7 +326,7 @@ class OllamaEngine:
 
             if attempt < self.settings.OLLAMA_RETRIES:
                 await asyncio.sleep(delay)
-                delay *= 2  # Exponential backoff
+                delay *= 2
 
         logger.error(
             "All Ollama attempts failed. Returning fallback. Last error: %s",
@@ -349,11 +348,6 @@ class OllamaEngine:
         history: Optional[List[ConversationMessage]] = None,
         text_emotion_summary: Optional[str] = None,
     ) -> AsyncIterator[str]:
-        """
-        Yields raw text chunks as they arrive from External Ollama.
-        Fast-fails with a clear message if Ollama is unreachable.
-        """
-        # Early reachability check — prevents indefinite hang on dead server
         if not await self.is_reachable():
             logger.warning(
                 "Ollama unreachable at %s — aborting stream, returning fallback.",
@@ -395,12 +389,10 @@ class OllamaEngine:
             "options": {
                 "temperature": 0.2,
                 "top_p": 0.9,
-                "num_ctx": 8192,   # Match model's full context window
+                "num_ctx": NUM_CTX,
             },
         }
 
-        # Use a dedicated streaming client with no read timeout
-        # (tokens trickle in slowly on CPU — we must not cut the connection)
         stream_client = self._make_client(stream=True)
         try:
             async with stream_client.stream("POST", "/api/generate", json=payload) as resp:
