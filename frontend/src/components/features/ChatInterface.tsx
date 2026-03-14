@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { sendChatMessage, streamChatMessage } from "../../services/api";
+import { sendChatMessage, streamChatMessage, getGitaAdvice } from "../../services/api";
 import type { PsychReport, CrisisResource, RemedyData } from "../../services/api";
 import { Bot, User, FileText, ChevronDown, ChevronUp, AlertTriangle, Phone, Lock } from "lucide-react";
 import { useUser } from '@clerk/react';
@@ -41,6 +41,27 @@ const RISK_CONFIG: Record<string, { color: string; bg: string; label: string }> 
   MODERATE: { color: "text-yellow-700", bg: "bg-yellow-100", label: "Moderate Risk" },
   HIGH:     { color: "text-orange-700", bg: "bg-orange-100", label: "High Risk"     },
   CRITICAL: { color: "text-red-700",    bg: "bg-red-100",    label: "Critical Risk" },
+};
+
+// ── Risk → Condition mapping (mirrors backend therapist.py) ───────────────
+const RISK_TO_CONDITION: Record<string, string> = {
+  CRITICAL: "Suicidal Ideation",
+  HIGH:     "Depression",
+  MODERATE: "Anxiety",
+  LOW:      "Anxiety",
+  MINIMAL:  "Anxiety",
+};
+
+// ── Fetch remedy after streaming based on risk classification ─────────────
+const fetchRemedyForReport = async (report: PsychReport): Promise<RemedyData | undefined> => {
+  try {
+    const condition = RISK_TO_CONDITION[report.risk_classification] ?? "Anxiety";
+    const data = await getGitaAdvice(condition);
+    return data as RemedyData;
+  } catch (e) {
+    console.warn("Remedy fetch failed:", e);
+    return undefined;
+  }
 };
 
 // ── Remedy Panel ──────────────────────────────────────────────────────────
@@ -213,7 +234,6 @@ const ChatInterface: React.FC<ChatProps> = ({ currentEmotion, sessionId }) => {
     }
 
     if (isGuestMode) {
-      // Load from in-memory guest store
       const guestConv = getGuestConversation(sessionId);
       if (guestConv) {
         setCreatedDate(guestConv.createdAt);
@@ -221,8 +241,6 @@ const ChatInterface: React.FC<ChatProps> = ({ currentEmotion, sessionId }) => {
       }
       return;
     }
-
-    // Authenticated: handled by Convex reactive queries below
   }, [sessionId, isGuestMode]);
 
   // Sync Convex query results into local state (authenticated mode only)
@@ -306,13 +324,14 @@ const ChatInterface: React.FC<ChatProps> = ({ currentEmotion, sessionId }) => {
             }
           }
 
-          const finalBotMsg: Message = { role: "assistant", content: finalReply, report };
+          // Fetch remedy based on risk classification from the parsed report
+          const remedy = report ? await fetchRemedyForReport(report) : undefined;
+
+          const finalBotMsg: Message = { role: "assistant", content: finalReply, report, remedy };
           setMessages((prev) => {
             const updated = [...prev];
             updated[updated.length - 1] = finalBotMsg;
-            // Persist to guest context
-            const allMessages = updated;
-            updateGuestConversation(guestConvId!, allMessages);
+            updateGuestConversation(guestConvId!, updated);
             return updated;
           });
         } catch (streamError) {
@@ -379,7 +398,10 @@ const ChatInterface: React.FC<ChatProps> = ({ currentEmotion, sessionId }) => {
           }
         }
 
-        const finalBotMsg: Message = { role: "assistant", content: finalReply, report };
+        // Fetch remedy based on risk classification from the parsed report
+        const remedy = report ? await fetchRemedyForReport(report) : undefined;
+
+        const finalBotMsg: Message = { role: "assistant", content: finalReply, report, remedy };
         setMessages((prev) => {
           const newMsgs = [...prev];
           newMsgs[newMsgs.length - 1] = finalBotMsg;
