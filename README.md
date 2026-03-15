@@ -64,27 +64,11 @@ Every chat response includes:
 
 ## System Architecture
 
-```
-User Text Input
-      │
-      ├─► DistilBERT Text Emotion Classifier
-      │       └─► emotion labels + confidence
-      │
-      ├─► Crisis Engine (Zero-Shot NLI)
-      │       └─► weighted risk score
-      │               ├─ score ≥ 0.65 → CRISIS OVERRIDE (no LLM)
-      │               └─ ELSE → continue
-      │
-      ├─► Multimodal Fusion Engine
-      │       ├─ text_distress × 0.65
-      │       └─ face_distress × 0.35 → final_risk_score
-      │
-      └─► Groq API → Llama 3.3 70B (structured JSON via ---JSON--- marker)
-              └─► PsychReport (Pydantic validated)
-                      └─► Remedy lookup (CSV → Gita + medication panel)
+### Pipeline
+![Pipeline Architecture](pipeline.png)
 
-Webcam → Keras CNN → face emotion score → Fusion Engine
-```
+### Application Workflow
+![Application Workflow](workflow.png)
 
 ---
 
@@ -98,7 +82,8 @@ Webcam → Keras CNN → face emotion score → Fusion Engine
 | **Text Emotion** | DistilBERT (`bhadresh-savani/distilbert-base-uncased-emotion`) |
 | **Crisis Detection** | MiniLM Zero-Shot NLI |
 | **Face Emotion** | OpenCV + Custom Keras CNN |
-| **Database & Auth** | Convex (auth + conversation history) |
+| **Auth** | Clerk |
+| **Database** | Convex (conversation history) |
 | **Remedies** | Pandas + CSV knowledge base |
 | **Hosting** | HF Spaces (backend) · Vercel (frontend) |
 
