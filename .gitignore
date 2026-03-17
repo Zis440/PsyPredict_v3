@@ -73,3 +73,8 @@ PIPELINE_ARCHITECTURE_GUIDE.md
 PIPELINE_ARCHITECTURE_GUIDE.pdf
 WORKFLOW_ARCHITECTURE_GUIDE.md
 WORKFLOW_ARCHITECTURE_GUIDE.pdf
+generate_diagrams.py
+pipeline_simplified.mmd
+workflow_simplified.mmd
+pipeline_simplified.png
+workflow_simplified.png

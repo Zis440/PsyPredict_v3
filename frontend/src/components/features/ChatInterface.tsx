@@ -209,6 +209,7 @@ const ChatInterface: React.FC<ChatProps> = ({ currentEmotion, sessionId }) => {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const createConversation = useMutation(api.conversations.create);
   const createMessage = useMutation(api.messages.create);
@@ -253,6 +254,7 @@ const ChatInterface: React.FC<ChatProps> = ({ currentEmotion, sessionId }) => {
           content: msg.content,
           report: meta?.report,
           fusionScore: meta?.fusionScore,
+          remedy: meta?.remedy,
         };
       });
       setMessages(formatted);
@@ -270,6 +272,7 @@ const ChatInterface: React.FC<ChatProps> = ({ currentEmotion, sessionId }) => {
     const userText = input;
     setInput("");
     setIsLoading(true);
+    if (textareaRef.current) textareaRef.current.style.height = "auto";
 
     const userMsg: Message = { role: "user", content: userText };
     setMessages((prev) => [...prev, userMsg]);
@@ -388,7 +391,7 @@ const ChatInterface: React.FC<ChatProps> = ({ currentEmotion, sessionId }) => {
         await createMessage({
           conversationId: activeConversationId as Id<"conversations">,
           content: finalReply,
-          metadata: { role: 'assistant', report },
+          metadata: { role: 'assistant', report, remedy },
         });
       } catch (streamError) {
         console.warn("Streaming failed, using fallback:", streamError);
@@ -408,7 +411,7 @@ const ChatInterface: React.FC<ChatProps> = ({ currentEmotion, sessionId }) => {
         await createMessage({
           conversationId: activeConversationId as Id<"conversations">,
           content: result.response,
-          metadata: { role: 'assistant', report: result.report },
+          metadata: { role: 'assistant', report: result.report, remedy: result.remedy },
         });
       }
 
@@ -509,11 +512,17 @@ const ChatInterface: React.FC<ChatProps> = ({ currentEmotion, sessionId }) => {
         {/* ── Input ── */}
         <div className="p-3 bg-white border-t border-gray-200 flex gap-2 min-w-0 shrink-0 items-end">
           <textarea
-            className="flex-1 min-w-0 border border-gray-300 rounded-2xl px-4 py-3 focus:outline-none focus:border-indigo-500 text-sm resize-none overflow-y-auto max-h-32"
+            ref={textareaRef}
+            className="flex-1 min-w-0 min-h-[46px] border border-gray-300 rounded-xl px-4 py-3 text-sm resize-none overflow-y-auto max-h-40 bg-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow"
             placeholder="Type your thoughts…"
             rows={1}
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={(e) => {
+              setInput(e.target.value);
+              // Auto-grow
+              e.target.style.height = "auto";
+              e.target.style.height = Math.min(e.target.scrollHeight, 160) + "px";
+            }}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
@@ -524,7 +533,7 @@ const ChatInterface: React.FC<ChatProps> = ({ currentEmotion, sessionId }) => {
           <button
             onClick={handleSend}
             disabled={isLoading}
-            className="bg-indigo-600 text-white px-4 py-3 rounded-xl font-bold hover:bg-indigo-700 disabled:opacity-50 transition-colors h-[46px] flex items-center justify-center"
+            className="bg-indigo-600 text-white px-5 py-3 rounded-xl font-semibold hover:bg-indigo-700 disabled:opacity-50 transition-colors h-[46px] flex items-center justify-center"
           >
             Send
           </button>
