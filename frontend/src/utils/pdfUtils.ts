@@ -170,14 +170,21 @@ export const generateChatPDF = (messages: Message[], date: string) => {
   const riskLevel     = lastReport?.risk_classification ?? "N/A";
 
   // ── Session Overview Box ───────────────────────────────────────────────
-  const boxH = 28;
+  const colW = CW / 4;
+  const conditionText = lastRemedy?.condition ?? "—";
+
+  // Pre-measure condition text to compute dynamic box height
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  const conditionLines = doc.splitTextToSize(conditionText, colW - 10);
+  const boxH = Math.max(28, 18 + conditionLines.length * 4.5);
+
   ensureSpace(boxH + 4);
   doc.setFillColor(...COLORS.slate50);
   doc.setDrawColor(...COLORS.slate200);
   doc.setLineWidth(0.3);
   doc.roundedRect(MX, Y, CW, boxH, 3, 3, 'FD');
 
-  const colW = CW / 4;
   const boxY = Y + 7;
   const valY = Y + 16;
 
@@ -192,7 +199,7 @@ export const generateChatPDF = (messages: Message[], date: string) => {
 
   // Column values
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(10);
+  doc.setFontSize(9);
   doc.setTextColor(...COLORS.slate800);
   doc.text(new Date(date).toLocaleDateString("en-IN"), MX + 6, valY);
   doc.text(`${totalMessages} (${userMessages} client, ${aiMessages} AI)`, MX + colW + 6, valY);
@@ -206,8 +213,11 @@ export const generateChatPDF = (messages: Message[], date: string) => {
     doc.text(riskLevel, MX + colW * 2 + 6, valY);
   }
 
+  // Condition — wrapped within column
   doc.setTextColor(...COLORS.slate800);
-  doc.text(lastRemedy?.condition ?? "—", MX + colW * 3 + 6, valY);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.text(conditionLines, MX + colW * 3 + 6, valY);
 
   Y += boxH + 6;
 
@@ -435,12 +445,14 @@ export const generateChatPDF = (messages: Message[], date: string) => {
           doc.setFontSize(8);
           doc.setTextColor(...COLORS.amberDark);
           doc.text("Bhagavad Gita Wisdom", MX + 4, Y);
+          
+          const labelWidth = doc.getTextWidth("Bhagavad Gita Wisdom  ");
 
           if (parsed.reference) {
             doc.setFont("helvetica", "normal");
             doc.setFontSize(7);
             doc.setTextColor(...COLORS.amber);
-            doc.text(`[${parsed.reference}]`, MX + 4 + doc.getTextWidth("Bhagavad Gita Wisdom  "), Y);
+            doc.text(`[${parsed.reference}]`, MX + 4 + labelWidth, Y);
           }
           Y += 5;
 
@@ -494,6 +506,8 @@ export const generateChatPDF = (messages: Message[], date: string) => {
           doc.text("MEDICATIONS", MX + 8, Y + 2);
 
           // Dosage box
+          doc.setFillColor(...COLORS.white);
+          doc.setDrawColor(...COLORS.slate200);
           doc.roundedRect(MX + halfW + 8, Y - 2, halfW, 6, 1.5, 1.5, 'FD');
           doc.setTextColor(...COLORS.red);
           doc.text("DOSAGE", MX + halfW + 12, Y + 2);
