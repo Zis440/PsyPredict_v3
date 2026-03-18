@@ -37,11 +37,11 @@ export const team = [
     github: "https://github.com/SanjanaChatterjee",
     linkedin: "https://www.linkedin.com/in/sanjana-jpeg/",
   },
-  {
-    photo: "nilanjana.webp",
-    title: "Nilanjana Sarkar",
-    email: "nilanjanasarkar2017@gmail.com",
-    github: undefined,
-    linkedin: "https://www.linkedin.com/in/nianjana-sarkar-4862011b9/",
-  },
+  // {
+  //   photo: "nilanjana.webp",
+  //   title: "Nilanjana Sarkar",
+  //   email: "nilanjanasarkar2017@gmail.com",
+  //   github: undefined,
+  //   linkedin: "https://www.linkedin.com/in/nianjana-sarkar-4862011b9/",
+  // },
 ];
