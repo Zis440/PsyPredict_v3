@@ -18,9 +18,9 @@ export const Team = () => {
         </p>
       </BlurFade>
 
-      <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 md:gap-12">
+      <div className="max-w-6xl mx-auto flex flex-wrap justify-center gap-6 sm:gap-8 md:gap-12">
         {team.map((s, i) => (
-          <BlurFade key={i} delay={0.1 + i * 0.05} inView>
+          <BlurFade key={i} delay={0.1 + i * 0.05} inView className="w-[calc(50%-12px)] md:w-[calc(25%-36px)]">
             <MagicCard className="p-0 border-slate-200 overflow-hidden bg-slate-50 shadow-sm" gradientColor="#6366f1" gradientOpacity={0.08}>
               <div className="aspect-square overflow-hidden mb-2">
                 <img
