@@ -38,8 +38,8 @@ class RemedyEngine:
         if result.empty:
             return None
 
-        # Get the first match
-        row = result.iloc[0]
+        # Randomly sample from all matches for diverse Gita shloka selection
+        row = result.sample(1).iloc[0]
 
         return {
             "condition": row['Mental Condition'],

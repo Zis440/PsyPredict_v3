@@ -348,7 +348,7 @@ const ChatInterface: React.FC<ChatProps> = ({ currentEmotion, sessionId }) => {
 
       // 2. Call AI API
       const historyForApi = [...messages, userMsg];
-      const result = await sendChatMessage(userText, currentEmotion, historyForApi);
+      const result = await sendChatMessage(userText, currentEmotion, historyForApi, user?.id);
 
       const botContent = result.response;
       const botMsg: Message = {

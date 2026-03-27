@@ -95,12 +95,14 @@ export const getGitaAdvice = async (condition: string) => {
 export const sendChatMessage = async (
   message: string,
   emotion: string,
-  history: Array<{ role: string; content: string }>
+  history: Array<{ role: string; content: string }>,
+  user_id?: string
 ): Promise<ChatResponse> => {
   const response = await apiClient.post("/chat", {
     message,
     emotion,
     history,
+    user_id,
   });
   return response.data;
 };

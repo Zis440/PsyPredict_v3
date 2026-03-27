@@ -41,6 +41,13 @@ class Settings(BaseSettings):
     # Input Sanitization
     MAX_INPUT_CHARS: int = 2000
 
+    # Patient Memory — Adaptive Learning
+    PATIENT_MEMORY_BACKEND: str = "sqlite"  # "sqlite" (local, default) or "supabase"
+    SUPABASE_URL: str = ""
+    SUPABASE_SERVICE_KEY: str = ""
+    PATIENT_HISTORY_MAX_SESSIONS: int = 20
+    SQLITE_DB_PATH: str = ""  # Auto-detected if empty
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

@@ -31,3 +31,6 @@ huggingface-hub>=0.23.0
 # --- Utilities ---
 requests
 python-multipart
+
+# --- Patient Memory (optional, for Supabase cloud backend) ---
+supabase>=2.0.0

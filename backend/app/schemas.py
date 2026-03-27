@@ -117,6 +117,7 @@ class ChatRequest(BaseModel):
     emotion: Optional[str] = Field(default="neutral", description="Face emotion from webcam")
     history: List[ConversationMessage] = Field(default_factory=list)
     stream: bool = Field(default=False, description="Enable streaming response")
+    user_id: Optional[str] = Field(default=None, description="Patient user ID for adaptive memory")
 
     @field_validator("message")
     @classmethod
@@ -131,14 +132,6 @@ class ChatRequest(BaseModel):
     @classmethod
     def normalize_emotion(cls, v: str) -> str:
         return v.lower().strip() if v else "neutral"
-
-
-class ChatResponse(BaseModel):
-    response: str = Field(description="Conversational reply text")
-    report: PsychReport
-    text_emotion: Optional[List[EmotionLabel]] = None
-    fusion_risk_score: Optional[float] = None
-    remedy: Optional[RemedyResponse] = None  # CSV-based remedy data, populated automatically
 
 
 # ---------------------------------------------------------------------------
@@ -185,6 +178,16 @@ class RemedyResponse(BaseModel):
     medications: str
     dosage: str
     gita_remedy: str
+
+
+# --- ChatResponse (defined AFTER RemedyResponse to avoid forward-reference) ---
+
+class ChatResponse(BaseModel):
+    response: str = Field(description="Conversational reply text")
+    report: PsychReport
+    text_emotion: Optional[List[EmotionLabel]] = None
+    fusion_risk_score: Optional[float] = None
+    remedy: Optional[RemedyResponse] = None  # CSV-based remedy data
 
 
 # ---------------------------------------------------------------------------

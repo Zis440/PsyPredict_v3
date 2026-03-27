@@ -33,20 +33,42 @@ logger = logging.getLogger(__name__)
 # System Prompt — Deterministic, clinical, no filler
 # ---------------------------------------------------------------------------
 
-SYSTEM_PROMPT = """You are a compassionate clinical AI therapist integrated into PsyPredict, a mental health platform.
+SYSTEM_PROMPT = """You are PsyPredict — a licensed clinical psychologist with deep expertise in CBT, DBT, psychodynamic therapy, and the psychological wisdom of the Bhagavad Gita. You combine modern evidence-based psychology with ancient Vedic insight to help each person heal.
+
 Your role is twofold:
-1. Respond as a warm, empathetic therapist — never robotic, never dismissive.
+1. Respond as a warm, deeply insightful psychologist who truly understands human suffering.
 2. Provide a structured backend psychological assessment in JSON format.
 
 == CONVERSATIONAL RESPONSE RULES ==
-- ALWAYS give a full, thoughtful, empathetic response FIRST (before the JSON block).
-- Responses must be at least 3-5 sentences. Never one-liners.
-- Validate the user's feelings. Reflect back what they shared. Show you truly listened.
+- ALWAYS give a full, thoughtful, deeply empathetic response FIRST (before the JSON block).
+- Responses must be at least 4-7 sentences. Never one-liners or generic platitudes.
+- Validate the user's feelings FIRST. Reflect back what they shared. Show you truly listened.
 - Do NOT start with "I'm here to help" or generic openers. Be specific to what they said.
-- Use warm, humanizing language. Be like a therapist who genuinely cares, not a support chatbot.
-- If the situation involves trauma, grief, betrayal, or crisis — respond with appropriate gravity and compassion.
-- Suggest one concrete, actionable step at the end of your reply.
-- Do NOT mention the JSON block, schema, or any technical terms in your reply.
+- Use warm, humanizing language — like a wise, caring psychologist talking to someone they deeply care about.
+- If the situation involves trauma, grief, betrayal, or crisis — respond with appropriate gravity, compassion, and clinical depth.
+
+== GITA SHLOKA INTEGRATION RULES ==
+- When a Gita shloka is provided in the GITA WISDOM CONTEXT below, you MUST weave it into your response naturally.
+- Quote the shloka reference (e.g., "Gita, Chapter 2, Verse 47") and explain it in SIMPLE, HUMANIZED language.
+- Include the original SANSKRIT TERM (e.g., Titiksha, Sthita-prajna, Vairagya) alongside plain English meaning.
+- Explain HOW this ancient wisdom DIRECTLY applies to the user's SPECIFIC situation — not generic advice.
+- Use real-life analogies, metaphors, or stories to make the shloka relatable and memorable.
+- NEVER repeat the same shloka explanation verbatim across responses. Use fresh angles, analogies, and framing each time.
+- If no shloka is provided, you may still reference Gita wisdom from your knowledge, but always be specific.
+
+== PATIENT HISTORY & ADAPTIVE RULES ==
+- If PATIENT HISTORY is provided below, use it to personalize your response.
+- Reference progress or patterns you notice (e.g., "I can see from our past conversations that...").
+- Adapt your therapeutic approach based on what has worked or not worked before.
+- If the patient is improving, acknowledge and reinforce the progress.
+- If the patient is recurring in distress, gently explore deeper root causes.
+- Be a psychologist who REMEMBERS — this builds trust and therapeutic alliance.
+
+== THERAPEUTIC DEPTH ==
+- End each response with ONE concrete, actionable psychological homework (e.g., "Tonight, try writing down three things that went well today — even small ones.").
+- Use CBT reframing, DBT distress tolerance, or psychodynamic insight as appropriate.
+- Vary your therapeutic approach across responses — don't always use the same framework.
+- Be DIVERSE in your analogies, tone, and framing. Never give a formulaic or robotic answer.
 
 == JSON ASSESSMENT RULES ==
 After your conversational response, add the marker: ---JSON---
@@ -74,7 +96,7 @@ PSYCH_REPORT_SCHEMA:
 }
 
 Output format:
-<Your full, empathetic therapist response here — 3-5 sentences minimum>
+<Your full, empathetic psychologist response here — 4-7 sentences minimum, with Gita shloka woven in naturally>
 ---JSON---
 { ...psych report json... }
 """
@@ -178,6 +200,8 @@ class OllamaEngine:
         face_emotion: str,
         history: List[ConversationMessage],
         text_emotion_summary: Optional[str] = None,
+        patient_profile: Optional[str] = None,
+        gita_context: Optional[str] = None,
     ) -> str:
         trimmed = self._trim_history(history)
         history_block = "\n".join(
@@ -192,8 +216,23 @@ class OllamaEngine:
         if text_emotion_summary:
             multimodal_ctx += f"  Text emotion (DistilBERT): {text_emotion_summary}\n"
 
+        # Patient adaptive context
+        patient_ctx = ""
+        if patient_profile:
+            patient_ctx = f"PATIENT HISTORY (Adaptive Context — use this to personalize your response):\n{patient_profile}\n\n"
+
+        # Gita shloka context from CSV corpus
+        gita_ctx = ""
+        if gita_context:
+            gita_ctx = (
+                f"GITA WISDOM CONTEXT (weave this shloka into your response naturally):\n"
+                f"{gita_context}\n\n"
+            )
+
         return (
             f"{SYSTEM_PROMPT}\n\n"
+            f"{patient_ctx}"
+            f"{gita_ctx}"
             f"CONVERSATION HISTORY:\n{history_block}\n\n"
             f"{multimodal_ctx}\n"
             f"CURRENT USER INPUT:\n{user_text}\n\n"
@@ -252,6 +291,8 @@ class OllamaEngine:
         face_emotion: str = "neutral",
         history: Optional[List[ConversationMessage]] = None,
         text_emotion_summary: Optional[str] = None,
+        patient_profile: Optional[str] = None,
+        gita_context: Optional[str] = None,
     ) -> tuple[str, PsychReport]:
         """
         Calls either Ollama API or Embedded LLM based on settings, 
@@ -259,11 +300,11 @@ class OllamaEngine:
         """
         # If user explicitly wants embedded mode
         if self.settings.USE_EMBEDDED_LLM:
-            return await self._generate_local(user_text, face_emotion, history, text_emotion_summary)
+            return await self._generate_local(user_text, face_emotion, history, text_emotion_summary, patient_profile, gita_context)
         
         # Otherwise try Ollama, fallback to local if it fails and GGUF is available
         try:
-            reply, report = await self._generate_ollama(user_text, face_emotion, history, text_emotion_summary)
+            reply, report = await self._generate_ollama(user_text, face_emotion, history, text_emotion_summary, patient_profile, gita_context)
             # If _generate_ollama returned the hardcoded fallback string, it failed its retries
             if "inference service is temporarily unavailable" in reply:
                 raise ConnectionError("Ollama service unreachable after retries.")
@@ -272,7 +313,7 @@ class OllamaEngine:
             import os
             if os.path.exists(self.settings.GGUF_MODEL_PATH):
                 logger.info("Ollama failed, falling back to embedded GGUF model: %s", exc)
-                return await self._generate_local(user_text, face_emotion, history, text_emotion_summary)
+                return await self._generate_local(user_text, face_emotion, history, text_emotion_summary, patient_profile, gita_context)
             else:
                 logger.error("Ollama failed and no GGUF model found for fallback at %s", self.settings.GGUF_MODEL_PATH)
                 return (
@@ -285,11 +326,13 @@ class OllamaEngine:
         user_text: str,
         face_emotion: str,
         history: Optional[List[ConversationMessage]],
-        text_emotion_summary: Optional[str]
+        text_emotion_summary: Optional[str],
+        patient_profile: Optional[str] = None,
+        gita_context: Optional[str] = None,
     ) -> tuple[str, PsychReport]:
         """Embedded generation via llama-cpp-python."""
         if history is None: history = []
-        prompt = self._build_prompt(user_text, face_emotion, history, text_emotion_summary)
+        prompt = self._build_prompt(user_text, face_emotion, history, text_emotion_summary, patient_profile, gita_context)
         
         try:
             llm = self._get_local_llm()
@@ -297,9 +340,9 @@ class OllamaEngine:
             response = await asyncio.to_thread(
                 llm,
                 prompt=prompt,
-                max_tokens=600,
-                temperature=0.2,
-                top_p=0.9,
+                max_tokens=800,
+                temperature=0.55,
+                top_p=0.92,
                 stop=["USER:", "CURRENT USER INPUT:"]
             )
             raw_text = response["choices"][0]["text"]
@@ -313,20 +356,22 @@ class OllamaEngine:
         user_text: str,
         face_emotion: str,
         history: Optional[List[ConversationMessage]],
-        text_emotion_summary: Optional[str]
+        text_emotion_summary: Optional[str],
+        patient_profile: Optional[str] = None,
+        gita_context: Optional[str] = None,
     ) -> tuple[str, PsychReport]:
         """Existing Ollama HTTP logic."""
         if history is None: history = []
 
-        prompt = self._build_prompt(user_text, face_emotion, history, text_emotion_summary)
+        prompt = self._build_prompt(user_text, face_emotion, history, text_emotion_summary, patient_profile, gita_context)
 
         payload = {
             "model": self.settings.OLLAMA_MODEL,
             "prompt": prompt,
             "stream": False,
             "options": {
-                "temperature": 0.2,      # Low temp for determinism
-                "top_p": 0.9,
+                "temperature": 0.55,
+                "top_p": 0.92,
                 "num_ctx": 4096,
                 "stop": [],
             },
@@ -384,15 +429,17 @@ class OllamaEngine:
         face_emotion: str = "neutral",
         history: Optional[List[ConversationMessage]] = None,
         text_emotion_summary: Optional[str] = None,
+        patient_profile: Optional[str] = None,
+        gita_context: Optional[str] = None,
     ) -> AsyncIterator[str]:
         """
         Yields raw text chunks as they arrive from either Ollama or Embedded LLM.
         """
         if self.settings.USE_EMBEDDED_LLM:
-            async for chunk in self._generate_stream_local(user_text, face_emotion, history, text_emotion_summary):
+            async for chunk in self._generate_stream_local(user_text, face_emotion, history, text_emotion_summary, patient_profile, gita_context):
                 yield chunk
         else:
-            async for chunk in self._generate_stream_ollama(user_text, face_emotion, history, text_emotion_summary):
+            async for chunk in self._generate_stream_ollama(user_text, face_emotion, history, text_emotion_summary, patient_profile, gita_context):
                 yield chunk
 
     async def _generate_stream_local(
@@ -400,20 +447,22 @@ class OllamaEngine:
         user_text: str,
         face_emotion: str,
         history: Optional[List[ConversationMessage]],
-        text_emotion_summary: Optional[str]
+        text_emotion_summary: Optional[str],
+        patient_profile: Optional[str] = None,
+        gita_context: Optional[str] = None,
     ) -> AsyncIterator[str]:
         """Embedded streaming via llama-cpp-python."""
         if history is None: history = []
-        prompt = self._build_prompt(user_text, face_emotion, history, text_emotion_summary)
+        prompt = self._build_prompt(user_text, face_emotion, history, text_emotion_summary, patient_profile, gita_context)
         
         try:
             llm = self._get_local_llm()
             # llama-cpp-python streaming is synchronous, so we need to wrap it
             stream = llm(
                 prompt=prompt,
-                max_tokens=600,
-                temperature=0.2,
-                top_p=0.9,
+                max_tokens=800,
+                temperature=0.55,
+                top_p=0.92,
                 stream=True,
                 stop=["USER:", "CURRENT USER INPUT:"]
             )
@@ -431,7 +480,9 @@ class OllamaEngine:
         user_text: str,
         face_emotion: str,
         history: Optional[List[ConversationMessage]],
-        text_emotion_summary: Optional[str]
+        text_emotion_summary: Optional[str],
+        patient_profile: Optional[str] = None,
+        gita_context: Optional[str] = None,
     ) -> AsyncIterator[str]:
         """
         Yields raw text chunks as they arrive from Ollama.
@@ -441,13 +492,13 @@ class OllamaEngine:
         if history is None:
             history = []
 
-        prompt = self._build_prompt(user_text, face_emotion, history, text_emotion_summary)
+        prompt = self._build_prompt(user_text, face_emotion, history, text_emotion_summary, patient_profile, gita_context)
 
         payload = {
             "model": self.settings.OLLAMA_MODEL,
             "prompt": prompt,
             "stream": True,
-            "options": {"temperature": 0.2, "top_p": 0.9, "num_ctx": 4096},
+            "options": {"temperature": 0.55, "top_p": 0.92, "num_ctx": 4096},
         }
 
         try:

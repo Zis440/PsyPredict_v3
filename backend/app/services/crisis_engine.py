@@ -127,8 +127,12 @@ class CrisisEngine:
     If triggered, returns a deterministic PsychReport override.
     """
 
-    def __init__(self, threshold: float = 0.65) -> None:
-        self.threshold = threshold
+    def __init__(self, threshold: float | None = None) -> None:
+        if threshold is not None:
+            self.threshold = threshold
+        else:
+            from app.config import get_settings
+            self.threshold = get_settings().CRISIS_THRESHOLD
 
     async def evaluate(self, text: str) -> tuple[float, bool]:
         """
