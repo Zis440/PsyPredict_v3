@@ -1,49 +1,53 @@
 import React, { useEffect, useState } from 'react';
 import Navbar from '../components/common/Navbar';
-import { supabase } from '../lib/supabase';
-import { useAuth } from '../hooks/useAuth';
+import { useUser } from '@clerk/react';
+import { useQuery } from "convex/react";
+import { api } from "../../convex/_generated/api";
 import { Link } from 'react-router-dom';
-import { MessageSquare, Calendar, ChevronRight } from 'lucide-react';
+import { MessageSquare, Calendar, ChevronRight, Clock } from 'lucide-react';
+import { useGuestMode } from '../context/GuestModeContext';
 
 
 const History: React.FC = () => {
-    const { user, isLocalMode } = useAuth();
+    const { user } = useUser();
+    const { isGuestMode, guestConversations } = useGuestMode();
     const [conversations, setConversations] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
+    // Convex query — skipped entirely in guest mode
+    const convexConversations = useQuery(
+        api.conversations.list,
+        !isGuestMode && user ? {} : "skip"
+    );
+
     useEffect(() => {
+        if (isGuestMode) {
+            const sorted = [...guestConversations]
+                .map((c) => ({
+                    id: c.id,
+                    title: c.title,
+                    created_at: c.createdAt,
+                }))
+                .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+            setConversations(sorted);
+            setLoading(false);
+            return;
+        }
+
         if (!user) return;
 
-        const fetchHistory = async () => {
-            let combined: any[] = [];
-
-            // 1. Fetch Local History
-            const localRaw = localStorage.getItem('psypredict_local_history');
-            if (localRaw) {
-                const localHistory = JSON.parse(localRaw);
-                combined = Object.values(localHistory).map((c: any) => ({ ...c, is_local: true }));
-            }
-
-            // 2. Fetch Supabase History (if not in local-only mode)
-            if (!isLocalMode) {
-                const { data, error } = await supabase
-                    .from('conversations')
-                    .select('*')
-                    .eq('user_id', user.id);
-
-                if (!error && data) {
-                    combined = [...combined, ...data.map((c: any) => ({ ...c, is_local: false }))];
-                }
-            }
-
-            // Sort by date
-            combined.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-            setConversations(combined);
-            setLoading(false);
-        };
-
-        fetchHistory();
-    }, [user]);
+        if (convexConversations) {
+            const sorted = [...convexConversations]
+                .map((c: any) => ({
+                    id: c._id,
+                    title: c.title,
+                    created_at: c.createdAt,
+                }))
+                .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+            setConversations(sorted);
+        }
+        setLoading(false);
+    }, [user, convexConversations, isGuestMode, guestConversations]);
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -54,6 +58,17 @@ const History: React.FC = () => {
                     <h1 className="text-2xl font-bold text-gray-900">Consultation History</h1>
                     <p className="text-gray-500 mt-2">View your past conversations and generated prescriptions.</p>
                 </div>
+
+                {/* Guest mode notice */}
+                {isGuestMode && (
+                    <div className="mb-6 flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+                        <Clock size={16} className="text-amber-600 mt-0.5 shrink-0" />
+                        <p className="text-sm text-amber-700">
+                            <span className="font-semibold">Guest Mode:</span> Your conversations are stored temporarily in this session only.
+                            They will be lost when you close the tab or sign in.
+                        </p>
+                    </div>
+                )}
 
                 {loading ? (
                     <div className="flex justify-center py-12">
@@ -85,8 +100,10 @@ const History: React.FC = () => {
                                     <div>
                                         <div className="flex items-center gap-2 mb-1">
                                             <h3 className="font-semibold text-gray-900">{conv.title || 'Untitled Conversation'}</h3>
-                                            {conv.is_local && (
-                                                <span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-md font-bold uppercase tracking-wider">Local</span>
+                                            {isGuestMode && (
+                                                <span className="text-[10px] font-medium text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                                                    Temporary
+                                                </span>
                                             )}
                                         </div>
                                         <div className="flex items-center gap-2 text-sm text-gray-500">

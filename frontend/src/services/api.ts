@@ -91,7 +91,7 @@ export const getGitaAdvice = async (condition: string) => {
   return response.data;
 };
 
-// 3. Send Message to AI Therapist (upgraded: returns structured ChatResponse)
+// 3. Send Message to AI Therapist (standard)
 export const sendChatMessage = async (
   message: string,
   emotion: string,
@@ -106,6 +106,52 @@ export const sendChatMessage = async (
   });
   return response.data;
 };
+
+// 4. Stream Message to AI Therapist
+export async function* streamChatMessage(
+  message: string,
+  emotion: string,
+  history: Array<{ role: string; content: string }>
+): AsyncIterableIterator<string> {
+  const controller = new AbortController();
+  // 300-second timeout — llama3 on CPU can take 2-3 min to generate a full response
+  const timeoutId = setTimeout(() => controller.abort(), 300_000);
+
+  let response: Response;
+  try {
+    response = await fetch(`${BASE_URL}/api/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message, emotion, history, stream: true }),
+      signal: controller.signal,
+    });
+  } catch (err: any) {
+    clearTimeout(timeoutId);
+    if (err?.name === "AbortError") {
+      throw new Error("Request timed out after 300 seconds. The model may be overloaded.");
+    }
+    throw err;
+  }
+
+  if (!response.ok || !response.body) {
+    clearTimeout(timeoutId);
+    throw new Error(`Stream request failed with status ${response.status}`);
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+
+  try {
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      yield decoder.decode(value, { stream: true });
+    }
+  } finally {
+    clearTimeout(timeoutId);
+    reader.releaseLock();
+  }
+}
 
 // 4. Standalone text emotion + crisis analysis (new)
 export const analyzeText = async (

@@ -63,6 +63,7 @@ const videoConstraints = {
         ref={webcamRef}
         screenshotFormat="image/jpeg"
         videoConstraints={videoConstraints}
+        mirrored={true} // Mirrors the UI preview for the user, but capture stream remains raw (un-mirrored)
         className="w-full h-auto"
       />
 

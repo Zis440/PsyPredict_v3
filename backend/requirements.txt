@@ -1,36 +1,51 @@
-# --- Core Backend (FastAPI) ---
+# ─────────────────────────────────────────────────────────────────────────────
+# PsyPredict Backend — Python Dependencies
+#
+# HOW TORCH IS HANDLED:
+#   Docker:  torch is pre-installed in a separate layer BEFORE this file runs:
+#              RUN pip install torch --index-url https://download.pytorch.org/whl/cpu
+#            pip will then skip the torch line below (version already satisfied).
+#   Local:   Run manually first:
+#              pip install torch --index-url https://download.pytorch.org/whl/cpu
+#            Then: pip install -r requirements.txt
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── Core Backend (FastAPI) ────────────────────────────────────────────────────
 fastapi>=0.111.0
 uvicorn[standard]>=0.30.0
 python-dotenv>=1.0.0
 pydantic>=2.0.0
 pydantic-settings>=2.0.0
 
-# --- HTTP + Async ---
+# ── HTTP + Async ──────────────────────────────────────────────────────────────
 httpx>=0.27.0
 anyio>=4.0.0
 
-# --- Rate Limiting ---
+# ── Rate Limiting ─────────────────────────────────────────────────────────────
 slowapi>=0.1.9
 
-# --- AI & Vision (Preserved - Version Locked for Stability) ---
+# ── Computer Vision (CPU-only, no CUDA) ──────────────────────────────────────
 numpy<2.0
-opencv-python
-tensorflow
+opencv-python-headless
+pillow
+
+# ── Deep Learning: TensorFlow CPU (Keras face emotion model) ─────────────────
 tensorflow-cpu
 pandas
-pillow
 gdown
 
-# --- NLP (New) ---
+# ── Deep Learning: PyTorch CPU + HuggingFace Transformers ────────────────────
+torch>=2.0.0 --index-url https://download.pytorch.org/whl/cpu
 transformers>=4.40.0
-torch>=2.0.0
 sentencepiece==0.1.99
-llama-cpp-python>=0.2.77
 huggingface-hub>=0.23.0
 
-# --- Utilities ---
+# ── Utilities ─────────────────────────────────────────────────────────────────
 requests
 python-multipart
+<<<<<<< HEAD
 
 # --- Patient Memory (optional, for Supabase cloud backend) ---
 supabase>=2.0.0
+=======
+>>>>>>> e0df7c7515413c00067c58471d916a2c19ab0679

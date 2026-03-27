@@ -1,9 +1,10 @@
-# PsyPredict v2.0 — Quick Start
+# PsyPredict — Quick Start
 
 ## Prerequisites (one-time)
 
 ```
 winget install Ollama.Ollama
+# ollama pull llama3
 ollama pull llama3
 ```
 

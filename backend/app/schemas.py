@@ -109,6 +109,31 @@ def fallback_report() -> PsychReport:
 
 
 # ---------------------------------------------------------------------------
+# Remedy Endpoint  (must be defined BEFORE ChatResponse which references it)
+# ---------------------------------------------------------------------------
+
+class RemedyResponse(BaseModel):
+    condition: str
+    symptoms: str
+    treatments: str
+    medications: str
+    dosage: str
+    gita_remedy: str
+
+
+# ---------------------------------------------------------------------------
+# Facial / Emotion Endpoint
+# ---------------------------------------------------------------------------
+
+class EmotionResponse(BaseModel):
+    emotion: Optional[str] = None
+    confidence: Optional[float] = None
+    face_box: Optional[List[int]] = None
+    message: Optional[str] = None
+    error: Optional[str] = None
+
+
+# ---------------------------------------------------------------------------
 # Chat Endpoint
 # ---------------------------------------------------------------------------
 
@@ -156,6 +181,7 @@ class TextAnalysisResponse(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+<<<<<<< HEAD
 # Facial / Emotion Endpoint
 # ---------------------------------------------------------------------------
 
@@ -191,6 +217,8 @@ class ChatResponse(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+=======
+>>>>>>> e0df7c7515413c00067c58471d916a2c19ab0679
 # Health Endpoint
 # ---------------------------------------------------------------------------
 

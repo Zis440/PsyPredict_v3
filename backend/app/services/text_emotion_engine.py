@@ -23,10 +23,15 @@ def _load_pipeline(model_name: str) -> None:
     global _pipeline, _load_error
     try:
         from transformers import pipeline as hf_pipeline
-        logger.info("Loading DistilBERT text emotion model: %s", model_name)
+        import os
+        
+        # Determine local path
+        local_path = os.path.join("app", "ml_assets", "distilbert_model")
+        
+        logger.info("Loading DistilBERT text emotion model from %s", local_path)
         _pipeline = hf_pipeline(
             "text-classification",
-            model=model_name,
+            model=local_path if os.path.exists(local_path) else model_name,
             top_k=None,           # Return ALL labels
             truncation=True,
             max_length=512,

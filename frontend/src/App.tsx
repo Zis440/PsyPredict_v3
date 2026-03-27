@@ -5,50 +5,50 @@ import LearnMore from './pages/LearnMore';
 import Settings from './pages/Settings';
 import History from './pages/History';
 import HistoryDetail from './pages/HistoryDetail';
-import { AuthProvider } from './context/AuthContext';
 import { ProtectedRoute, Login } from './routes/ProtectedRoute';
+import { GuestModeProvider } from './context/GuestModeContext';
 
 function App() {
   return (
-    <AuthProvider>
+    <GuestModeProvider>
       <Routes>
         <Route path="/" element={<Landing />} />
-        <Route path="/login" element={<Login />} />
-        <Route 
-          path="/dashboard" 
+        <Route path="/auth" element={<Login />} />
+        <Route
+          path="/dashboard"
           element={
             <ProtectedRoute>
               <Dashboard />
             </ProtectedRoute>
-          } 
+          }
         />
-        <Route 
-          path="/history" 
+        <Route
+          path="/history"
           element={
             <ProtectedRoute>
               <History />
             </ProtectedRoute>
-          } 
+          }
         />
-        <Route 
-          path="/history/:id" 
+        <Route
+          path="/history/:id"
           element={
             <ProtectedRoute>
               <HistoryDetail />
             </ProtectedRoute>
-          } 
+          }
         />
-        <Route 
-          path="/settings" 
+        <Route
+          path="/settings"
           element={
             <ProtectedRoute>
               <Settings />
             </ProtectedRoute>
-          } 
+          }
         />
         <Route path="/learn-more" element={<LearnMore />} />
       </Routes>
-    </AuthProvider>
+    </GuestModeProvider>
   );
 }
 

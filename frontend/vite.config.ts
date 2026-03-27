@@ -3,8 +3,15 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
 
+import path from "path"
+
 // https://vitejs.dev/config/
 export default defineConfig({
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
+    },
+  },
   plugins: [
     react(),
     tailwindcss(),
@@ -24,9 +31,9 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:7860', // FastAPI Backend (v2.0)
+        target: 'https://therandomuser03-psypredict-backend.hf.space', // FastAPI Backend (v2.0)
         changeOrigin: true,
-        secure: false,
+        secure: true,
       }
     }
   }

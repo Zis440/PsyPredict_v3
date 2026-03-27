@@ -63,15 +63,17 @@ async def lifespan(app: FastAPI):
     logger.info("═══════════════════════════════════════")
     logger.info("Config: Ollama=%s model=%s", settings.OLLAMA_BASE_URL, settings.OLLAMA_MODEL)
 
-    # Pre-warm DistilBERT text emotion model
-    logger.info("Pre-warming DistilBERT text emotion model...")
+    import asyncio as _asyncio
+    
+    # Pre-warm DistilBERT text emotion model (in background)
+    logger.info("Initializing DistilBERT text emotion model (background)...")
     from app.services.text_emotion_engine import initialize as init_text
-    init_text(settings.DISTILBERT_MODEL)
+    _asyncio.create_task(_asyncio.to_thread(init_text, settings.DISTILBERT_MODEL))
 
-    # Pre-warm Crisis zero-shot classifier
-    logger.info("Pre-warming crisis detection classifier...")
+    # Pre-warm Crisis zero-shot classifier (in background)
+    logger.info("Initializing crisis detection classifier (background)...")
     from app.services.crisis_engine import initialize_crisis_classifier
-    initialize_crisis_classifier()
+    _asyncio.create_task(_asyncio.to_thread(initialize_crisis_classifier))
 
     # Check Ollama availability (non-blocking warn only)
     from app.services.ollama_engine import ollama_engine
@@ -106,7 +108,7 @@ def create_app() -> FastAPI:
         title="PsyPredict API",
         description=(
             "Production-grade multimodal mental health AI system. "
-            "Powered by LLaMA 3 (Ollama) + DistilBERT + Keras CNN facial emotion model."
+            "Powered by Llama3 (Ollama) + DistilBERT + Keras CNN facial emotion model."
         ),
         version="2.0.0",
         lifespan=lifespan,

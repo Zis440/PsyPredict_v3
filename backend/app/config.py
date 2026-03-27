@@ -7,38 +7,37 @@ from functools import lru_cache
 
 
 class Settings(BaseSettings):
-    # Ollama / LLM
-    OLLAMA_BASE_URL: str = "http://localhost:11434"
-    OLLAMA_MODEL: str = "llama3"
-    OLLAMA_TIMEOUT_S: int = 120
-    
-    # --- Embedded LLM Settings (for Docker/HF Spaces) ---
-    USE_EMBEDDED_LLM: bool = False  # Set to True in .env for Docker/HF Spaces
-    GGUF_MODEL_PATH: str = "app/ml_assets/llama-3-8b-instruct.Q4_K_M.gguf"
-    LLM_CONTEXT_SIZE: int = 2048
+    # ── Groq API (replaces Ollama) ────────────────────────────────────────────
+    GROQ_API_KEY: str = ""
+    GROQ_MODEL: str = "llama-3.3-70b-versatile"
+
+    # ── Kept for backwards compatibility (health endpoint reads these) ─────────
+    OLLAMA_BASE_URL: str = "http://127.0.0.1:11434"
+    OLLAMA_MODEL: str = "llama-3.3-70b-versatile"
+    OLLAMA_TIMEOUT_S: int = 30
     OLLAMA_RETRIES: int = 3
     OLLAMA_RETRY_DELAY_S: float = 2.0
 
-    # DistilBERT Text Emotion
+    # ── DistilBERT Text Emotion ───────────────────────────────────────────────
     DISTILBERT_MODEL: str = "bhadresh-savani/distilbert-base-uncased-emotion"
 
-    # Crisis Detection
+    # ── Crisis Detection ──────────────────────────────────────────────────────
     CRISIS_THRESHOLD: float = 0.65
 
-    # Multimodal Fusion Weights (must sum to ~1.0)
+    # ── Multimodal Fusion Weights (must sum to ~1.0) ──────────────────────────
     TEXT_WEIGHT: float = 0.65
     FACE_WEIGHT: float = 0.35
 
-    # Context Window
+    # ── Context Window ────────────────────────────────────────────────────────
     MAX_CONTEXT_TURNS: int = 10
 
-    # Logging
+    # ── Logging ───────────────────────────────────────────────────────────────
     LOG_LEVEL: str = "INFO"
 
-    # Rate Limiting
+    # ── Rate Limiting ─────────────────────────────────────────────────────────
     RATE_LIMIT: str = "30/minute"
 
-    # Input Sanitization
+    # ── Input Sanitization ───────────────────────────────────────────────────
     MAX_INPUT_CHARS: int = 2000
 
     # Patient Memory — Adaptive Learning
@@ -51,7 +50,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
-        extra="ignore",        # Ignore unknown env vars (e.g. old GOOGLE_API_KEY)
+        extra="ignore",
     )
 
 
