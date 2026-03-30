@@ -355,21 +355,7 @@ const ChatInterface: React.FC<ChatProps> = ({ currentEmotion, sessionId }) => {
       });
 
       const historyForApi = [...messages, userMsg];
-<<<<<<< HEAD
-      const result = await sendChatMessage(userText, currentEmotion, historyForApi, user?.id);
-
-      const botContent = result.response;
-      const botMsg: Message = {
-        role: "assistant",
-        content: botContent,
-        report: result.report,
-        fusionScore: result.fusion_risk_score ?? undefined,
-        remedy: result.remedy ?? undefined,
-      };
-
-=======
       const botMsg: Message = { role: "assistant", content: "" };
->>>>>>> e0df7c7515413c00067c58471d916a2c19ab0679
       setMessages((prev) => [...prev, botMsg]);
 
       let fullResponse = "";
