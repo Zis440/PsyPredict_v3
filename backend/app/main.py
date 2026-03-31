@@ -1,12 +1,14 @@
 """
-main.py — PsyPredict FastAPI Application (Production)
-Replaces Flask. Key features:
+main.py — PsyPredict FastAPI Application (Production v1.4)
+Key features:
+  - Dual-LLM orchestration (Ollama local + Groq cloud)
+  - FAISS-powered semantic knowledge retrieval
+  - Patient memory with adaptive preferences
   - Async request handling (FastAPI + Uvicorn)
-  - CORS middleware
-  - Rate limiting (SlowAPI)
+  - CORS middleware + Rate limiting (SlowAPI)
   - Structured logging (Python logging)
-  - Startup model pre-warming
-  - Graceful shutdown (LLM client cleanup)
+  - Startup model pre-warming + orchestrator initialization
+  - Graceful shutdown (both LLM clients cleanup)
   - FastAPI auto docs at /docs (Swagger) and /redoc
 """
 from __future__ import annotations
@@ -27,6 +29,8 @@ from app.api.endpoints.facial import router as facial_router
 from app.api.endpoints.remedies import router as remedies_router
 from app.api.endpoints.therapist import router as therapist_router
 from app.api.endpoints.analysis import router as analysis_router
+from app.api.endpoints.progress import router as progress_router
+from app.api.endpoints.orchestrator_status import router as orchestrator_router
 
 settings = get_settings()
 
@@ -55,65 +59,88 @@ limiter = Limiter(key_func=get_remote_address, default_limits=[settings.RATE_LIM
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
-    Startup: pre-warm models (DistilBERT + Crisis classifier).
-    Shutdown: close LLM client.
+    Startup:
+      1. Initialize dual-LLM orchestrator (Ollama + Groq health checks)
+      2. Pre-warm ML models (DistilBERT + Crisis classifier) in background
+      3. Build FAISS knowledge index in background
+      4. Initialize patient memory engine
+    Shutdown:
+      Close both LLM clients gracefully.
     """
-    logger.info("═══════════════════════════════════════")
-    logger.info("🚀 PsyPredict v2.0 — Production Backend")
-    logger.info("═══════════════════════════════════════")
-
-    # Import the LLM engine (triggers provider factory)
-    from app.services.ollama_engine import ollama_engine
-
-    logger.info(
-        "LLM Provider: %s (model=%s, base_url=%s)",
-        ollama_engine.provider_name,
-        ollama_engine.model_name,
-        ollama_engine.base_url,
-    )
+    logger.info("═══════════════════════════════════════════════")
+    logger.info("🚀 PsyPredict v1.4 — Emotionally Intelligent AI")
+    logger.info("═══════════════════════════════════════════════")
 
     import asyncio as _asyncio
 
-    # Pre-warm DistilBERT text emotion model (in background)
+    # ── 1. Initialize Dual-LLM Orchestrator ──────────────────────────────────
+    if settings.LLM_ORCHESTRATOR_ENABLED:
+        logger.info("Initializing dual-LLM orchestrator...")
+        from app.services.ollama_engine import orchestrator
+        await orchestrator.initialize()
+        logger.info(
+            "Orchestrator status: local=%s, cloud=%s",
+            "✅" if orchestrator._local_available else "❌",
+            "✅" if orchestrator._cloud_available else "❌",
+        )
+    else:
+        # Fallback: use single provider (backward compat)
+        from app.services.ollama_engine import ollama_engine
+        logger.info(
+            "LLM Provider (single): %s (model=%s, base_url=%s)",
+            ollama_engine.provider_name,
+            ollama_engine.model_name,
+            ollama_engine.base_url,
+        )
+        reachable = await ollama_engine.is_reachable()
+        if reachable:
+            logger.info("✅ %s reachable", ollama_engine.provider_name.upper())
+        else:
+            logger.warning("⚠️  %s NOT reachable", ollama_engine.provider_name.upper())
+
+    # ── 2. Pre-warm ML Models (background) ───────────────────────────────────
     logger.info("Initializing DistilBERT text emotion model (background)...")
     from app.services.text_emotion_engine import initialize as init_text
     _asyncio.create_task(_asyncio.to_thread(init_text, settings.DISTILBERT_MODEL))
 
-    # Pre-warm Crisis zero-shot classifier (in background)
     logger.info("Initializing crisis detection classifier (background)...")
     from app.services.crisis_engine import initialize_crisis_classifier
     _asyncio.create_task(_asyncio.to_thread(initialize_crisis_classifier))
 
-    # Check LLM provider availability (non-blocking warn only)
-    reachable = await ollama_engine.is_reachable()
-    if reachable:
-        logger.info(
-            "✅ %s reachable (model: %s)",
-            ollama_engine.provider_name.upper(),
-            ollama_engine.model_name,
-        )
-    else:
-        if ollama_engine.provider_name == "ollama":
-            logger.warning(
-                "⚠️  Ollama NOT reachable at %s — chat will return fallback responses. "
-                "Run: ollama serve && ollama pull %s",
-                ollama_engine.base_url,
-                ollama_engine.model_name,
-            )
-        else:
-            logger.warning(
-                "⚠️  Groq API NOT reachable — check GROQ_API_KEY. "
-                "Chat will return fallback responses."
-            )
+    # ── 3. Build Knowledge Index (background) ────────────────────────────────
+    if settings.KNOWLEDGE_INDEX_ENABLED:
+        logger.info("Building FAISS knowledge index (background)...")
+        from app.services.knowledge_index import get_knowledge_index
+        ki = get_knowledge_index()
+        _asyncio.create_task(_asyncio.to_thread(ki.build))
 
+    # ── 4. Initialize Patient Memory ─────────────────────────────────────────
+    logger.info("Initializing patient memory engine...")
+    from app.services.patient_memory import init_patient_memory
+    init_patient_memory(
+        backend=settings.PATIENT_MEMORY_BACKEND,
+        sqlite_path=settings.SQLITE_DB_PATH,
+        supabase_url=settings.SUPABASE_URL,
+        supabase_key=settings.SUPABASE_SERVICE_KEY,
+        max_sessions=settings.PATIENT_HISTORY_MAX_SESSIONS,
+    )
+    logger.info("✅ Patient memory initialized (%s)", settings.PATIENT_MEMORY_BACKEND)
+
+    logger.info("═══════════════════════════════════════════════")
     logger.info("✅ Startup complete. Listening on port 7860.")
-    logger.info("   Docs: http://localhost:7860/docs")
-    logger.info("═══════════════════════════════════════")
+    logger.info("   Docs:         http://localhost:7860/docs")
+    logger.info("   Orchestrator: http://localhost:7860/api/orchestrator/status")
+    logger.info("═══════════════════════════════════════════════")
 
     yield  # ── Application Running ──
 
     logger.info("Shutting down PsyPredict backend...")
-    await ollama_engine.close()
+    if settings.LLM_ORCHESTRATOR_ENABLED:
+        from app.services.ollama_engine import orchestrator as orch
+        await orch.close()
+    else:
+        from app.services.ollama_engine import ollama_engine as engine
+        await engine.close()
     logger.info("Goodbye.")
 
 
@@ -125,10 +152,11 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title="PsyPredict API",
         description=(
-            "Production-grade multimodal mental health AI system. "
-            "Powered by Llama3 (Groq/Ollama) + DistilBERT + Keras CNN facial emotion model."
+            "Production-grade emotionally intelligent mental health AI system. "
+            "Dual-LLM orchestration (Ollama + Groq) with FAISS semantic search, "
+            "adaptive patient memory, and Bhagavad Gita wisdom integration."
         ),
-        version="2.0.0",
+        version="1.4.0",
         lifespan=lifespan,
         docs_url="/docs",
         redoc_url="/redoc",
@@ -161,6 +189,8 @@ def create_app() -> FastAPI:
     app.include_router(remedies_router, prefix="/api", tags=["Remedies"])
     app.include_router(therapist_router, prefix="/api", tags=["AI Therapist"])
     app.include_router(analysis_router, prefix="/api", tags=["Text Analysis & Health"])
+    app.include_router(progress_router, tags=["Patient Progress"])
+    app.include_router(orchestrator_router, tags=["Orchestrator"])
 
     return app
 
@@ -181,3 +211,4 @@ if __name__ == "__main__":
         log_level=settings.LOG_LEVEL.lower(),
         workers=1,  # Keep at 1: models are singletons loaded in memory
     )
+

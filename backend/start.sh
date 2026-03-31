@@ -5,11 +5,11 @@
 # Execution order:
 #   1. Start Ollama server daemon in the background
 #   2. Wait until Ollama API is healthy (up to 60 seconds)
-#   3. Pull the Phi-3.5 quantized model (skips if already cached in this run)
+#   3. Pull the configured model (skips if already cached in this run)
 #   4. Launch FastAPI / Uvicorn on port 7860
 #
 # Environment variables (set in Dockerfile or HF Space secrets):
-#   OLLAMA_MODEL  — model tag to pull (default: phi3.5:3.8b-mini-instruct-q4_0)
+#   OLLAMA_MODEL_NAME — model tag to pull (default: llama3)
 # ─────────────────────────────────────────────────────────────────────────────
 
 set -e  # Exit immediately on any error
@@ -38,13 +38,12 @@ for i in $(seq 1 $RETRIES); do
     sleep 2
 done
 
-# ── Step 3: Pull the Phi-3.5 model ────────────────────────────────────────────
+# ── Step 3: Pull the model ────────────────────────────────────────────────────
+# Reads OLLAMA_MODEL_NAME — same variable used by config.py and .env.example.
 # 'ollama pull' is idempotent — safe to call even if the model is cached.
-# On HF Spaces, the first pull will download ~2.4 GB; subsequent restarts
-# are faster because the container's /root/.ollama layer is reused.
-MODEL="${OLLAMA_MODEL:-phi3.5:3.8b-mini-instruct-q4_0}"
+MODEL="${OLLAMA_MODEL_NAME:-llama3}"
 echo "▶  Pulling model: $MODEL"
-echo "   (First run downloads ~2.4 GB — may take several minutes on CPU)"
+echo "   (First run downloads ~4.7 GB — may take several minutes on CPU)"
 ollama pull "$MODEL"
 echo "✅  Model ready: $MODEL"
 

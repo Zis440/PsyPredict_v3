@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
-import { sendChatMessage, streamChatMessage, getGitaAdvice } from "../../services/api";
-import type { PsychReport, CrisisResource, RemedyData } from "../../services/api";
-import { Bot, User, FileText, ChevronDown, ChevronUp, AlertTriangle, Phone, Lock } from "lucide-react";
+import { sendChatMessage, streamChatMessage, getGitaAdvice, submitSessionFeedback } from "../../services/api";
+import type { PsychReport, CrisisResource, RemedyData, RoutingMetadata } from "../../services/api";
+import { Bot, User, FileText, ChevronDown, ChevronUp, AlertTriangle, Phone, Lock, ThumbsUp, ThumbsDown, Zap, Cloud } from "lucide-react";
 import { useUser } from '@clerk/react';
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
@@ -22,6 +22,7 @@ interface Message {
   report?: PsychReport;
   fusionScore?: number;
   remedy?: RemedyData;
+  routing?: RoutingMetadata;
 }
 
 interface ChatProps {
@@ -208,6 +209,7 @@ const ChatInterface: React.FC<ChatProps> = ({ currentEmotion, sessionId }) => {
   const [createdDate, setCreatedDate] = useState<string>(new Date().toISOString());
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [feedbackState, setFeedbackState] = useState<Record<number, 'up' | 'down'>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -255,6 +257,7 @@ const ChatInterface: React.FC<ChatProps> = ({ currentEmotion, sessionId }) => {
           report: meta?.report,
           fusionScore: meta?.fusionScore,
           remedy: meta?.remedy,
+          routing: meta?.routing,
         };
       });
       setMessages(formatted);
@@ -264,6 +267,20 @@ const ChatInterface: React.FC<ChatProps> = ({ currentEmotion, sessionId }) => {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  const handleFeedback = async (index: number, rating: number) => {
+    if (isGuestMode || !user) return;
+    setFeedbackState(prev => ({ ...prev, [index]: rating > 3 ? 'up' : 'down' }));
+    try {
+      await submitSessionFeedback(user.id, {
+        rating,
+        comment: "",
+        message_id: String(index)
+      });
+    } catch (e) {
+      console.error("Feedback failed", e);
+    }
+  };
 
   const handleSend = async () => {
     if (!input.trim()) return;
@@ -329,6 +346,7 @@ const ChatInterface: React.FC<ChatProps> = ({ currentEmotion, sessionId }) => {
             report: result.report,
             fusionScore: result.fusion_risk_score ?? undefined,
             remedy: result.remedy ?? undefined,
+            routing: result.routing ?? undefined,
           };
           setMessages((prev) => {
             const updated = [...prev];
@@ -402,6 +420,7 @@ const ChatInterface: React.FC<ChatProps> = ({ currentEmotion, sessionId }) => {
           report: result.report,
           fusionScore: result.fusion_risk_score ?? undefined,
           remedy: result.remedy ?? undefined,
+          routing: result.routing ?? undefined,
         };
         setMessages((prev) => {
           const n = [...prev];
@@ -411,7 +430,7 @@ const ChatInterface: React.FC<ChatProps> = ({ currentEmotion, sessionId }) => {
         await createMessage({
           conversationId: activeConversationId as Id<"conversations">,
           content: result.response,
-          metadata: { role: 'assistant', report: result.report, remedy: result.remedy },
+          metadata: { role: 'assistant', report: result.report, remedy: result.remedy, routing: result.routing },
         });
       }
 
@@ -482,6 +501,54 @@ const ChatInterface: React.FC<ChatProps> = ({ currentEmotion, sessionId }) => {
                   `}
                 >
                   {msg.content}
+                  
+                  {/* Routing Indicator & Feedback (only for assistant) */}
+                  {msg.role === "assistant" && (
+                    <div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-100">
+                      <div className="flex items-center gap-2">
+                        {msg.routing ? (
+                          <span className={`flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded border ${
+                            msg.routing.provider_used === 'ollama' 
+                              ? 'bg-blue-50 text-blue-600 border-blue-100' 
+                              : msg.routing.provider_used === 'groq'
+                              ? 'bg-purple-50 text-purple-600 border-purple-100'
+                              : 'bg-gray-50 text-gray-500 border-gray-200'
+                          }`}>
+                            {msg.routing.provider_used === 'ollama' ? <Zap size={10} /> : <Cloud size={10} />}
+                            {msg.routing.provider_used.toUpperCase()}
+                            {msg.routing.latency_ms && <span className="text-gray-400 ml-1">{msg.routing.latency_ms}ms</span>}
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded border bg-blue-50 text-blue-600 border-blue-100">
+                            <Zap size={10} /> OLLAMA
+                            <span className="text-gray-400 ml-1">Streamed</span>
+                          </span>
+                        )}
+                        {msg.routing?.fallback_used && (
+                          <span className="text-[10px] text-amber-600 font-medium whitespace-nowrap">Fallback</span>
+                        )}
+                      </div>
+                      
+                      {!isGuestMode && (
+                        <div className="flex items-center gap-1">
+                          <button 
+                            onClick={() => handleFeedback(index, 5)}
+                            className={`p-1 rounded hover:bg-gray-100 transition-colors ${feedbackState[index] === 'up' ? 'text-green-600 bg-green-50' : 'text-gray-400'}`}
+                            title="Helpful"
+                          >
+                            <ThumbsUp size={14} />
+                          </button>
+                          <button 
+                            onClick={() => handleFeedback(index, 1)}
+                            className={`p-1 rounded hover:bg-gray-100 transition-colors ${feedbackState[index] === 'down' ? 'text-red-600 bg-red-50' : 'text-gray-400'}`}
+                            title="Not Helpful"
+                          >
+                            <ThumbsDown size={14} />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Combined assessment + remedy panel */}

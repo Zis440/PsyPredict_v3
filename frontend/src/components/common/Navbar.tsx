@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { UserButton, useUser } from '@clerk/react';
-import { Menu, X, Settings, LayoutDashboard, History, LogIn } from 'lucide-react';
+import { Menu, X, Settings, LayoutDashboard, History, LogIn, BarChart3 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGuestMode } from '../../context/GuestModeContext';
 
@@ -16,6 +16,7 @@ const Navbar: React.FC = () => {
 
   const navLinks = [
     { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { path: '/progress',  label: 'Progress',  icon: BarChart3 },
     { path: '/history',   label: 'History',   icon: History },
     { path: '/settings',  label: 'Settings',  icon: Settings },
   ];

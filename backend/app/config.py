@@ -16,14 +16,13 @@ class Settings(BaseSettings):
     GROQ_MODEL: str = "llama-3.3-70b-versatile"
 
     # ── Ollama (local LLM inference) ──────────────────────────────────────────
+    # OLLAMA_MODEL_NAME is the canonical variable used everywhere:
+    #   config.py, .env, .env.example, start.sh, docker-compose.yml
     OLLAMA_BASE_URL: str = "http://127.0.0.1:11434"
     OLLAMA_MODEL_NAME: str = "llama3"
     OLLAMA_TIMEOUT_S: int = 120
     OLLAMA_RETRIES: int = 3
     OLLAMA_RETRY_DELAY_S: float = 2.0
-
-    # ── Legacy compat (health endpoint previously read these) ─────────────────
-    OLLAMA_MODEL: str = "llama3"
 
     # ── DistilBERT Text Emotion ───────────────────────────────────────────────
     DISTILBERT_MODEL: str = "bhadresh-savani/distilbert-base-uncased-emotion"
@@ -47,12 +46,28 @@ class Settings(BaseSettings):
     # ── Input Sanitization ───────────────────────────────────────────────────
     MAX_INPUT_CHARS: int = 2000
 
-    # Patient Memory — Adaptive Learning
+    # ── LLM Orchestrator ──────────────────────────────────────────────────────
+    LLM_ORCHESTRATOR_ENABLED: bool = True     # Use dual-LLM orchestrator
+    CLOUD_FALLBACK_ENABLED: bool = True       # Fall back to Groq if Ollama fails
+    LOCAL_FALLBACK_ENABLED: bool = True        # Fall back to Ollama if Groq fails
+    PII_SCRUB_BEFORE_CLOUD: bool = True        # Redact PII before cloud calls
+
+    # ── Knowledge Index (FAISS) ───────────────────────────────────────────────
+    KNOWLEDGE_INDEX_ENABLED: bool = True
+    KNOWLEDGE_EMBEDDING_MODEL: str = "sentence-transformers/all-MiniLM-L6-v2"
+    KNOWLEDGE_INDEX_TOP_K: int = 3
+    KNOWLEDGE_INDEX_CACHE_DIR: str = ""        # Auto-detected if empty
+
+    # ── Patient Memory — Adaptive Learning ───────────────────────────────────
     PATIENT_MEMORY_BACKEND: str = "sqlite"  # "sqlite" (local, default) or "supabase"
     SUPABASE_URL: str = ""
     SUPABASE_SERVICE_KEY: str = ""
     PATIENT_HISTORY_MAX_SESSIONS: int = 20
     SQLITE_DB_PATH: str = ""  # Auto-detected if empty
+
+    # ── Session Summarization ─────────────────────────────────────────────────
+    SESSION_SUMMARY_ENABLED: bool = True       # Auto-summarize sessions
+    PROGRESS_TRACKING_ENABLED: bool = True     # Track patient progress over time
 
     model_config = SettingsConfigDict(
         env_file=".env",

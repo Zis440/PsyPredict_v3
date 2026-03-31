@@ -51,8 +51,44 @@ CREATE TABLE IF NOT EXISTS patient_profiles (
     last_updated TEXT
 );
 
+CREATE TABLE IF NOT EXISTS patient_preferences (
+    user_id TEXT PRIMARY KEY,
+    preferred_tone TEXT DEFAULT 'warm',
+    verbosity TEXT DEFAULT 'moderate',
+    framework_preference TEXT DEFAULT 'auto',
+    topics_to_avoid TEXT,          -- JSON array
+    engagement_score REAL DEFAULT 0.5,
+    last_updated TEXT
+);
+
+CREATE TABLE IF NOT EXISTS progress_snapshots (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT NOT NULL,
+    snapshot_date TEXT NOT NULL,
+    period_start TEXT,
+    period_end TEXT,
+    avg_risk_score REAL,
+    dominant_emotions TEXT,     -- JSON array
+    sessions_count INTEGER,
+    improvement_score REAL,    -- -1 to 1
+    summary TEXT,
+    created_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS session_feedback (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT NOT NULL,
+    session_id INTEGER,
+    message_id TEXT,
+    rating INTEGER,
+    comment TEXT,
+    created_at TEXT
+);
+
 CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_sessions_created ON sessions(created_at);
+CREATE INDEX IF NOT EXISTS idx_progress_user ON progress_snapshots(user_id);
+CREATE INDEX IF NOT EXISTS idx_feedback_user ON session_feedback(user_id);
 """
 
 
@@ -424,6 +460,295 @@ class PatientMemoryEngine:
         except Exception as exc:
             logger.error("Failed to build patient profile (Supabase): %s", exc)
             return None
+
+
+    # --- Patient Preferences ----------------------------------------------------
+
+    def get_preferences(self, user_id: str) -> Optional[Dict[str, Any]]:
+        """Get patient preferences."""
+        if not user_id or self.backend != "sqlite":
+            return None
+        conn = self._get_conn()
+        try:
+            row = conn.execute(
+                "SELECT * FROM patient_preferences WHERE user_id = ?", (user_id,)
+            ).fetchone()
+            if not row:
+                return None
+            topics = []
+            try:
+                topics = json.loads(row["topics_to_avoid"] or "[]")
+            except (json.JSONDecodeError, TypeError):
+                pass
+            return {
+                "user_id": row["user_id"],
+                "preferred_tone": row["preferred_tone"] or "warm",
+                "verbosity": row["verbosity"] or "moderate",
+                "framework_preference": row["framework_preference"] or "auto",
+                "topics_to_avoid": topics,
+                "engagement_score": row["engagement_score"] or 0.5,
+                "last_updated": row["last_updated"],
+            }
+        except Exception as exc:
+            logger.error("Failed to get preferences: %s", exc)
+            return None
+        finally:
+            conn.close()
+
+    def update_preferences(
+        self,
+        user_id: str,
+        preferred_tone: Optional[str] = None,
+        verbosity: Optional[str] = None,
+        framework_preference: Optional[str] = None,
+        topics_to_avoid: Optional[List[str]] = None,
+    ) -> bool:
+        """Update patient preferences (upsert)."""
+        if not user_id or self.backend != "sqlite":
+            return False
+        conn = self._get_conn()
+        try:
+            existing = conn.execute(
+                "SELECT * FROM patient_preferences WHERE user_id = ?", (user_id,)
+            ).fetchone()
+            now = datetime.now(timezone.utc).isoformat()
+
+            if existing:
+                updates = []
+                params = []
+                if preferred_tone is not None:
+                    updates.append("preferred_tone = ?")
+                    params.append(preferred_tone)
+                if verbosity is not None:
+                    updates.append("verbosity = ?")
+                    params.append(verbosity)
+                if framework_preference is not None:
+                    updates.append("framework_preference = ?")
+                    params.append(framework_preference)
+                if topics_to_avoid is not None:
+                    updates.append("topics_to_avoid = ?")
+                    params.append(json.dumps(topics_to_avoid))
+                if updates:
+                    updates.append("last_updated = ?")
+                    params.append(now)
+                    params.append(user_id)
+                    conn.execute(
+                        f"UPDATE patient_preferences SET {', '.join(updates)} WHERE user_id = ?",
+                        params,
+                    )
+            else:
+                conn.execute(
+                    """INSERT INTO patient_preferences
+                       (user_id, preferred_tone, verbosity, framework_preference, topics_to_avoid, last_updated)
+                       VALUES (?, ?, ?, ?, ?, ?)""",
+                    (
+                        user_id,
+                        preferred_tone or "warm",
+                        verbosity or "moderate",
+                        framework_preference or "auto",
+                        json.dumps(topics_to_avoid or []),
+                        now,
+                    ),
+                )
+            conn.commit()
+            self._cache.pop(user_id, None)  # Invalidate cache
+            return True
+        except Exception as exc:
+            logger.error("Failed to update preferences: %s", exc)
+            return False
+        finally:
+            conn.close()
+
+    # --- Progress Tracking ------------------------------------------------------
+
+    def get_progress(self, user_id: str) -> Optional[Dict[str, Any]]:
+        """Get patient progress data for the progress dashboard."""
+        if not user_id or self.backend != "sqlite":
+            return None
+        conn = self._get_conn()
+        try:
+            # Get session data
+            sessions = conn.execute(
+                """SELECT dominant_emotion, risk_level, fusion_score, created_at
+                   FROM sessions WHERE user_id = ?
+                   ORDER BY created_at ASC""",
+                (user_id,),
+            ).fetchall()
+
+            if not sessions:
+                return None
+
+            risk_order = {"MINIMAL": 0.0, "LOW": 0.25, "MODERATE": 0.5, "HIGH": 0.75, "CRITICAL": 1.0}
+
+            # Build trends
+            emotion_trend = []
+            risk_trend = []
+            for s in sessions:
+                entry = {
+                    "date": s["created_at"],
+                    "emotion": s["dominant_emotion"] or "neutral",
+                }
+                emotion_trend.append(entry)
+                risk_trend.append({
+                    "date": s["created_at"],
+                    "risk": s["risk_level"] or "MINIMAL",
+                    "score": risk_order.get(s["risk_level"] or "MINIMAL", 0.0),
+                    "fusion_score": s["fusion_score"],
+                })
+
+            # Get snapshots
+            snapshots = conn.execute(
+                """SELECT * FROM progress_snapshots WHERE user_id = ?
+                   ORDER BY snapshot_date DESC LIMIT 10""",
+                (user_id,),
+            ).fetchall()
+
+            snapshot_list = []
+            for snap in snapshots:
+                dominant_emos = []
+                try:
+                    dominant_emos = json.loads(snap["dominant_emotions"] or "[]")
+                except (json.JSONDecodeError, TypeError):
+                    pass
+                snapshot_list.append({
+                    "snapshot_date": snap["snapshot_date"],
+                    "period_start": snap["period_start"],
+                    "period_end": snap["period_end"],
+                    "avg_risk_score": snap["avg_risk_score"] or 0.0,
+                    "dominant_emotions": dominant_emos,
+                    "sessions_count": snap["sessions_count"] or 0,
+                    "improvement_score": snap["improvement_score"] or 0.0,
+                    "summary": snap["summary"] or "",
+                })
+
+            # Get profile for current risk level
+            profile = conn.execute(
+                "SELECT * FROM patient_profiles WHERE user_id = ?", (user_id,)
+            ).fetchone()
+
+            return {
+                "user_id": user_id,
+                "total_sessions": len(sessions),
+                "first_session": sessions[0]["created_at"] if sessions else None,
+                "last_session": sessions[-1]["created_at"] if sessions else None,
+                "current_risk_level": sessions[-1]["risk_level"] or "MINIMAL" if sessions else "MINIMAL",
+                "emotion_trend": emotion_trend,
+                "risk_trend": risk_trend,
+                "snapshots": snapshot_list,
+                "summary": profile["risk_trend"] if profile else "unknown",
+            }
+        except Exception as exc:
+            logger.error("Failed to get progress: %s", exc)
+            return None
+        finally:
+            conn.close()
+
+    def save_progress_snapshot(
+        self,
+        user_id: str,
+        period_start: str,
+        period_end: str,
+        avg_risk_score: float,
+        dominant_emotions: List[str],
+        sessions_count: int,
+        improvement_score: float,
+        summary: str,
+    ) -> bool:
+        """Save a progress snapshot."""
+        if not user_id or self.backend != "sqlite":
+            return False
+        conn = self._get_conn()
+        try:
+            now = datetime.now(timezone.utc).isoformat()
+            conn.execute(
+                """INSERT INTO progress_snapshots
+                   (user_id, snapshot_date, period_start, period_end,
+                    avg_risk_score, dominant_emotions, sessions_count,
+                    improvement_score, summary, created_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (
+                    user_id, now, period_start, period_end,
+                    avg_risk_score, json.dumps(dominant_emotions),
+                    sessions_count, improvement_score, summary, now,
+                ),
+            )
+            conn.commit()
+            return True
+        except Exception as exc:
+            logger.error("Failed to save progress snapshot: %s", exc)
+            return False
+        finally:
+            conn.close()
+
+    # --- Session Feedback -------------------------------------------------------
+
+    def save_feedback(
+        self,
+        user_id: str,
+        rating: int,
+        session_id: Optional[int] = None,
+        message_id: Optional[str] = None,
+        comment: Optional[str] = None,
+    ) -> bool:
+        """Save session feedback."""
+        if not user_id or self.backend != "sqlite":
+            return False
+        conn = self._get_conn()
+        try:
+            now = datetime.now(timezone.utc).isoformat()
+            conn.execute(
+                """INSERT INTO session_feedback
+                   (user_id, session_id, message_id, rating, comment, created_at)
+                   VALUES (?, ?, ?, ?, ?, ?)""",
+                (user_id, session_id, message_id, rating, comment, now),
+            )
+            conn.commit()
+            return True
+        except Exception as exc:
+            logger.error("Failed to save feedback: %s", exc)
+            return False
+        finally:
+            conn.close()
+
+    def get_avg_feedback(self, user_id: str) -> Optional[float]:
+        """Get average feedback rating for a patient."""
+        if not user_id or self.backend != "sqlite":
+            return None
+        conn = self._get_conn()
+        try:
+            row = conn.execute(
+                "SELECT AVG(rating) as avg_rating FROM session_feedback WHERE user_id = ?",
+                (user_id,),
+            ).fetchone()
+            return row["avg_rating"] if row and row["avg_rating"] else None
+        except Exception as exc:
+            logger.error("Failed to get avg feedback: %s", exc)
+            return None
+        finally:
+            conn.close()
+
+    # --- Enhanced Profile (with preferences) ------------------------------------
+
+    def get_enhanced_profile(self, user_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Returns both the LLM-injectable profile string AND structured preference data.
+        Used by the adaptive prompt builder.
+        """
+        profile_str = self.get_patient_profile(user_id)
+        preferences = self.get_preferences(user_id)
+        avg_feedback = self.get_avg_feedback(user_id)
+
+        return {
+            "profile_string": profile_str,
+            "preferences": preferences or {
+                "preferred_tone": "warm",
+                "verbosity": "moderate",
+                "framework_preference": "auto",
+                "topics_to_avoid": [],
+                "engagement_score": 0.5,
+            },
+            "avg_feedback_rating": avg_feedback,
+        }
 
 
 # ---------------------------------------------------------------------------

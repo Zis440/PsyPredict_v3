@@ -5,6 +5,7 @@ import LearnMore from './pages/LearnMore';
 import Settings from './pages/Settings';
 import History from './pages/History';
 import HistoryDetail from './pages/HistoryDetail';
+import Progress from './pages/Progress';
 import { ProtectedRoute, Login } from './routes/ProtectedRoute';
 import { GuestModeProvider } from './context/GuestModeContext';
 
@@ -43,6 +44,14 @@ function App() {
           element={
             <ProtectedRoute>
               <Settings />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/progress"
+          element={
+            <ProtectedRoute>
+              <Progress />
             </ProtectedRoute>
           }
         />

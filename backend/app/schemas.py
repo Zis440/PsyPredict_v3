@@ -27,6 +27,14 @@ class MessageRole(str, Enum):
     ASSISTANT = "assistant"
 
 
+class TaskType(str, Enum):
+    """Types of LLM tasks with different routing priorities."""
+    ROUTINE_CHAT = "routine_chat"
+    LONG_FORM_SUMMARY = "long_form_summary"
+    PROGRESS_ANALYSIS = "progress_analysis"
+    KNOWLEDGE_RETRIEVAL = "knowledge_retrieval"
+
+
 # ---------------------------------------------------------------------------
 # Shared Sub-models
 # ---------------------------------------------------------------------------
@@ -159,12 +167,25 @@ class ChatRequest(BaseModel):
         return v.lower().strip() if v else "neutral"
 
 
+class RoutingMetadata(BaseModel):
+    """Metadata about how a request was routed between LLM providers."""
+    provider_used: str = Field(description="Which LLM provider handled this request")
+    task_type: str = Field(description="Task classification that drove routing")
+    latency_ms: float = Field(description="Total inference latency in milliseconds")
+    fallback_used: bool = Field(default=False, description="Whether a fallback provider was used")
+    fallback_provider: Optional[str] = Field(default=None, description="Original provider that failed")
+    pii_scrubbed: bool = Field(default=False, description="Whether PII was redacted before cloud call")
+    pii_types: List[str] = Field(default_factory=list, description="Types of PII detected and scrubbed")
+    error: Optional[str] = Field(default=None, description="Error message if routing failed")
+
+
 class ChatResponse(BaseModel):
     response: str = Field(description="Conversational reply text")
     report: PsychReport
     text_emotion: Optional[List[EmotionLabel]] = None
     fusion_risk_score: Optional[float] = None
     remedy: Optional[RemedyResponse] = None  # CSV-based remedy data
+    routing: Optional[RoutingMetadata] = None  # LLM routing info
 
 
 # ---------------------------------------------------------------------------
@@ -198,7 +219,7 @@ class HealthResponse(BaseModel):
     llm_reachable: bool
     llm_model: str
     distilbert_loaded: bool
-    version: str = "2.0.0"
+    version: str = "1.4.0"
 
 
 # ---------------------------------------------------------------------------
@@ -211,3 +232,92 @@ class LLMStatusResponse(BaseModel):
     model: str
     base_url: str
     fallback_available: bool
+
+
+# ---------------------------------------------------------------------------
+# Patient Preferences
+# ---------------------------------------------------------------------------
+
+class PatientPreferences(BaseModel):
+    """Patient's therapeutic preferences for adaptive personalization."""
+    user_id: str
+    preferred_tone: str = Field(default="warm", description="warm, formal, motivational, calm, structured")
+    verbosity: str = Field(default="moderate", description="concise, moderate, detailed")
+    framework_preference: str = Field(default="auto", description="cbt, dbt, psychodynamic, gita, auto")
+    topics_to_avoid: List[str] = Field(default_factory=list)
+    engagement_score: float = Field(default=0.5, ge=0.0, le=1.0)
+    last_updated: Optional[str] = None
+
+
+class PatientPreferencesUpdate(BaseModel):
+    """Request body for updating patient preferences."""
+    preferred_tone: Optional[str] = None
+    verbosity: Optional[str] = None
+    framework_preference: Optional[str] = None
+    topics_to_avoid: Optional[List[str]] = None
+
+    @field_validator("preferred_tone")
+    @classmethod
+    def validate_tone(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None:
+            allowed = {"warm", "formal", "motivational", "calm", "structured"}
+            if v.lower() not in allowed:
+                raise ValueError(f"Tone must be one of: {allowed}")
+            return v.lower()
+        return v
+
+    @field_validator("verbosity")
+    @classmethod
+    def validate_verbosity(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None:
+            allowed = {"concise", "moderate", "detailed"}
+            if v.lower() not in allowed:
+                raise ValueError(f"Verbosity must be one of: {allowed}")
+            return v.lower()
+        return v
+
+    @field_validator("framework_preference")
+    @classmethod
+    def validate_framework(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None:
+            allowed = {"cbt", "dbt", "psychodynamic", "gita", "auto"}
+            if v.lower() not in allowed:
+                raise ValueError(f"Framework must be one of: {allowed}")
+            return v.lower()
+        return v
+
+
+# ---------------------------------------------------------------------------
+# Progress Tracking
+# ---------------------------------------------------------------------------
+
+class ProgressSnapshot(BaseModel):
+    """A snapshot of patient progress over a time period."""
+    snapshot_date: str
+    period_start: Optional[str] = None
+    period_end: Optional[str] = None
+    avg_risk_score: float = Field(ge=0.0, le=1.0)
+    dominant_emotions: List[str] = Field(default_factory=list)
+    sessions_count: int = 0
+    improvement_score: float = Field(default=0.0, ge=-1.0, le=1.0)
+    summary: str = ""
+
+
+class PatientProgressResponse(BaseModel):
+    """Full progress response for a patient."""
+    user_id: str
+    total_sessions: int
+    first_session: Optional[str] = None
+    last_session: Optional[str] = None
+    current_risk_level: str = "MINIMAL"
+    emotion_trend: List[Dict[str, Any]] = Field(default_factory=list)
+    risk_trend: List[Dict[str, Any]] = Field(default_factory=list)
+    snapshots: List[ProgressSnapshot] = Field(default_factory=list)
+    summary: str = ""
+
+
+class SessionFeedback(BaseModel):
+    """Feedback for a specific session/message."""
+    rating: int = Field(ge=1, le=5, description="1-5 star rating")
+    comment: Optional[str] = Field(default=None, max_length=500)
+    message_id: Optional[str] = None

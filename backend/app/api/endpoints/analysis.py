@@ -1,9 +1,9 @@
 """
-analysis.py — PsyPredict Text Analysis & Health Endpoints (FastAPI)
+analysis.py — PsyPredict Text Analysis & Health Endpoints (FastAPI) v1.4
 Endpoints:
   POST /api/analyze/text  — standalone DistilBERT text emotion + crisis scoring
-  GET  /api/health        — system health check (LLM provider, DistilBERT status)
-  GET  /api/llm/status    — detailed LLM provider status
+  GET  /api/health        — system health check (LLM providers, DistilBERT, knowledge index)
+  GET  /api/llm/status    — detailed LLM provider status (orchestrator-aware)
 """
 from __future__ import annotations
 
@@ -59,59 +59,81 @@ async def analyze_text(req: TextAnalysisRequest):
 # GET /api/health
 # ---------------------------------------------------------------------------
 
-@router.get("/health", response_model=HealthResponse)
+@router.get("/health")
 async def health():
     """
     System health check.
-    Returns status of the active LLM provider, model name, DistilBERT load status.
+    When orchestrator is enabled, reports both LLM providers.
+    Also reports DistilBERT and knowledge index status.
     """
-    llm_ok = await ollama_engine.is_reachable()
     distilbert_ok = text_emotion_engine.is_loaded
 
-    overall = "ok" if (llm_ok and distilbert_ok) else "degraded"
+    # Check knowledge index status
+    knowledge_index_ready = False
+    if settings.KNOWLEDGE_INDEX_ENABLED:
+        try:
+            from app.services.knowledge_index import get_knowledge_index
+            ki = get_knowledge_index()
+            knowledge_index_ready = ki.is_ready
+        except Exception:
+            pass
 
-    if not llm_ok:
-        logger.warning(
-            "Health check: LLM provider '%s' unreachable (base_url=%s)",
-            ollama_engine.provider_name,
-            ollama_engine.base_url,
+    if settings.LLM_ORCHESTRATOR_ENABLED:
+        from app.services.ollama_engine import orchestrator
+        any_reachable = orchestrator._local_available or orchestrator._cloud_available
+        overall = "ok" if (any_reachable and distilbert_ok) else "degraded"
+
+        return {
+            "status": overall,
+            "version": "1.4.0",
+            "orchestrator_enabled": True,
+            "llm_local": {
+                "provider": "ollama",
+                "reachable": orchestrator._local_available,
+                "model": orchestrator._local.model_name if orchestrator._local else "N/A",
+            },
+            "llm_cloud": {
+                "provider": "groq",
+                "reachable": orchestrator._cloud_available,
+                "model": orchestrator._cloud.model_name if orchestrator._cloud else "N/A",
+            },
+            "distilbert_loaded": distilbert_ok,
+            "knowledge_index_ready": knowledge_index_ready,
+        }
+    else:
+        llm_ok = await ollama_engine.is_reachable()
+        overall = "ok" if (llm_ok and distilbert_ok) else "degraded"
+
+        return HealthResponse(
+            status=overall,
+            llm_provider=ollama_engine.provider_name,
+            llm_reachable=llm_ok,
+            llm_model=ollama_engine.model_name,
+            distilbert_loaded=distilbert_ok,
+            version="1.4.0",
         )
-    if not distilbert_ok:
-        logger.warning("Health check: DistilBERT not loaded. Error: %s", text_emotion_engine.load_error)
-
-    return HealthResponse(
-        status=overall,
-        llm_provider=ollama_engine.provider_name,
-        llm_reachable=llm_ok,
-        llm_model=ollama_engine.model_name,
-        distilbert_loaded=distilbert_ok,
-    )
 
 
 # ---------------------------------------------------------------------------
 # GET /api/llm/status — Detailed LLM provider status
 # ---------------------------------------------------------------------------
 
-@router.get("/llm/status", response_model=LLMStatusResponse)
+@router.get("/llm/status")
 async def llm_status():
     """
     Detailed LLM provider status.
-    Reports which provider is active, whether it's reachable,
-    the model being used, and whether a fallback provider is available.
+    When orchestrator is enabled, reports both providers with routing stats.
     """
-    reachable = await ollama_engine.is_reachable()
+    if settings.LLM_ORCHESTRATOR_ENABLED:
+        from app.services.ollama_engine import orchestrator
+        return orchestrator.get_status()
 
-    # Check if fallback is available
+    reachable = await ollama_engine.is_reachable()
     provider = ollama_engine.provider_name
     fallback_available = False
 
     if provider == "ollama" and settings.GROQ_API_KEY:
-        # Ollama is primary but Groq key exists as potential fallback
         fallback_available = True
-    elif provider == "groq":
-        # Could potentially fall back to Ollama, but we can't check
-        # without instantiating it — just report False
-        fallback_available = False
 
     return LLMStatusResponse(
         provider=provider,
@@ -120,3 +142,4 @@ async def llm_status():
         base_url=ollama_engine.base_url,
         fallback_available=fallback_available,
     )
+

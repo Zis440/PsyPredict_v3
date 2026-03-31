@@ -46,12 +46,24 @@ export interface RemedyData {
   gita_remedy: string;
 }
 
+export interface RoutingMetadata {
+  provider_used: string;
+  task_type: string;
+  latency_ms: number;
+  fallback_used: boolean;
+  fallback_provider: string | null;
+  pii_scrubbed: boolean;
+  pii_types: string[];
+  error: string | null;
+}
+
 export interface ChatResponse {
   response: string;
   report: PsychReport;
   text_emotion: EmotionLabel[] | null;
   fusion_risk_score: number | null;
   remedy: RemedyData | null;
+  routing: RoutingMetadata | null;
 }
 
 export interface TextAnalysisResponse {
@@ -63,10 +75,63 @@ export interface TextAnalysisResponse {
 
 export interface HealthResponse {
   status: string;
-  ollama_reachable: boolean;
-  ollama_model: string;
-  distilbert_loaded: boolean;
   version: string;
+  orchestrator_enabled?: boolean;
+  llm_local?: { provider: string; reachable: boolean; model: string };
+  llm_cloud?: { provider: string; reachable: boolean; model: string };
+  llm_provider?: string;
+  llm_reachable?: boolean;
+  llm_model?: string;
+  distilbert_loaded: boolean;
+  knowledge_index_ready?: boolean;
+}
+
+export interface PatientPreferences {
+  user_id: string;
+  preferred_tone: string;
+  verbosity: string;
+  framework_preference: string;
+  topics_to_avoid: string[];
+  engagement_score: number;
+  last_updated: string | null;
+}
+
+export interface PatientProgress {
+  user_id: string;
+  total_sessions: number;
+  first_session: string | null;
+  last_session: string | null;
+  current_risk_level: string;
+  emotion_trend: Array<{ date: string; emotion: string }>;
+  risk_trend: Array<{ date: string; risk: string; score: number; fusion_score: number | null }>;
+  snapshots: Array<{
+    snapshot_date: string;
+    period_start: string | null;
+    period_end: string | null;
+    avg_risk_score: number;
+    dominant_emotions: string[];
+    sessions_count: number;
+    improvement_score: number;
+    summary: string;
+  }>;
+  summary: string;
+}
+
+export interface OrchestratorStatus {
+  orchestrator_enabled: boolean;
+  local: { provider: string; available: boolean; model: string; base_url: string };
+  cloud: { provider: string; available: boolean; model: string; base_url: string };
+  stats: {
+    total_requests: number;
+    local_requests: number;
+    cloud_requests: number;
+    fallback_count: number;
+    pii_scrub_count: number;
+    avg_local_latency_ms: number;
+    avg_cloud_latency_ms: number;
+    local_errors: number;
+    cloud_errors: number;
+  };
 }
 
 // --- API Functions ---
@@ -153,7 +218,7 @@ export async function* streamChatMessage(
   }
 }
 
-// 4. Standalone text emotion + crisis analysis (new)
+// 5. Standalone text emotion + crisis analysis
 export const analyzeText = async (
   text: string
 ): Promise<TextAnalysisResponse> => {
@@ -161,8 +226,51 @@ export const analyzeText = async (
   return response.data;
 };
 
-// 5. Health check (new)
+// 6. Health check
 export const getHealth = async (): Promise<HealthResponse> => {
   const response = await apiClient.get("/health");
   return response.data;
 };
+
+// 7. Patient Progress
+export const getPatientProgress = async (userId: string): Promise<PatientProgress> => {
+  const response = await apiClient.get(`/patient/${userId}/progress`);
+  return response.data;
+};
+
+export const generateProgressSnapshot = async (userId: string): Promise<void> => {
+  await apiClient.post(`/patient/${userId}/snapshot`);
+};
+
+// 8. Patient Preferences
+export const getPatientPreferences = async (userId: string): Promise<PatientPreferences> => {
+  const response = await apiClient.get(`/patient/${userId}/preferences`);
+  return response.data;
+};
+
+export const updatePatientPreferences = async (
+  userId: string,
+  update: {
+    preferred_tone?: string;
+    verbosity?: string;
+    framework_preference?: string;
+    topics_to_avoid?: string[];
+  }
+): Promise<void> => {
+  await apiClient.put(`/patient/${userId}/preferences`, update);
+};
+
+// 9. Session Feedback
+export const submitSessionFeedback = async (
+  userId: string,
+  feedback: { rating: number; comment?: string; message_id?: string }
+): Promise<void> => {
+  await apiClient.post(`/patient/${userId}/feedback`, feedback);
+};
+
+// 10. Orchestrator Status
+export const getOrchestratorStatus = async (): Promise<OrchestratorStatus> => {
+  const response = await apiClient.get("/orchestrator/status");
+  return response.data;
+};
+

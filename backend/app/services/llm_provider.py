@@ -4,14 +4,20 @@ llm_provider.py — LLM Provider Factory for PsyPredict
 Reads LLM_PROVIDER from settings and returns the appropriate
 singleton client. Handles graceful fallback if Ollama is configured
 but Groq key is available as backup.
+
+Also provides `get_orchestrator()` for the new dual-LLM routing engine.
 """
 from __future__ import annotations
 
 import logging
 from functools import lru_cache
+from typing import TYPE_CHECKING
 
 from app.config import get_settings
 from app.services.base_llm_client import BaseLLMClient
+
+if TYPE_CHECKING:
+    from app.services.llm_orchestrator import LLMOrchestrator
 
 logger = logging.getLogger(__name__)
 
@@ -60,3 +66,19 @@ def get_llm_client() -> BaseLLMClient:
     from app.services.groq_client import GroqClient
 
     return GroqClient()
+
+
+def get_orchestrator() -> "LLMOrchestrator":
+    """
+    Returns the LLM Orchestrator singleton.
+
+    The orchestrator manages both local (Ollama) and cloud (Groq) clients
+    and routes requests intelligently based on task type, privacy, and
+    provider availability.
+
+    Must call `await orchestrator.initialize()` before first use.
+    """
+    from app.services.llm_orchestrator import get_orchestrator as _get
+
+    return _get()
+

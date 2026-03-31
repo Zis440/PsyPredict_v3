@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '../components/common/Navbar';
+import TonePreferences from '../components/features/TonePreferences';
 import { useUser } from '@clerk/react';
 import { useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { motion } from 'framer-motion';
-import { Save, AlertCircle, CheckCircle } from 'lucide-react';
+import { Save, AlertCircle, CheckCircle, BarChart3, ArrowRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const Settings: React.FC = () => {
   const { user } = useUser();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const updateProfile = useMutation(api.users.updateProfile);
@@ -59,12 +62,14 @@ const Settings: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <Navbar />
-      
-      <main className="flex-1 max-w-4xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-12">
+
+      <main className="flex-1 max-w-4xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-12 space-y-6">
+
+        {/* ── Account Settings ─────────────────────────────────────── */}
         <motion.div
-           initial={{ opacity: 0, y: 20 }}
-           animate={{ opacity: 1, y: 0 }}
-           className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden"
         >
           <div className="px-6 py-8 sm:p-10">
             <div className="mb-8">
@@ -131,6 +136,41 @@ const Settings: React.FC = () => {
             </form>
           </div>
         </motion.div>
+
+        {/* ── Tone Preferences ──────────────────────────────────────── */}
+        {user && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+          >
+            <TonePreferences userId={user.id} />
+          </motion.div>
+        )}
+
+        {/* ── Progress Dashboard Link ────────────────────────────────── */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          <button
+            onClick={() => navigate('/progress')}
+            className="w-full flex items-center justify-between px-6 py-5 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100 rounded-2xl hover:from-indigo-100 hover:to-purple-100 transition-all group shadow-sm"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+                <BarChart3 className="w-5 h-5 text-white" />
+              </div>
+              <div className="text-left">
+                <p className="font-semibold text-gray-800">Your Progress Dashboard</p>
+                <p className="text-sm text-gray-500">View your emotional wellness trends & session history</p>
+              </div>
+            </div>
+            <ArrowRight className="w-5 h-5 text-indigo-500 group-hover:translate-x-1 transition-transform" />
+          </button>
+        </motion.div>
+
       </main>
     </div>
   );
