@@ -1,8 +1,9 @@
 """
 analysis.py — PsyPredict Text Analysis & Health Endpoints (FastAPI)
-New endpoints:
+Endpoints:
   POST /api/analyze/text  — standalone DistilBERT text emotion + crisis scoring
-  GET  /api/health        — system health check (Ollama, DistilBERT status)
+  GET  /api/health        — system health check (LLM provider, DistilBERT status)
+  GET  /api/llm/status    — detailed LLM provider status
 """
 from __future__ import annotations
 
@@ -12,6 +13,7 @@ from fastapi import APIRouter
 
 from app.schemas import (
     HealthResponse,
+    LLMStatusResponse,
     TextAnalysisRequest,
     TextAnalysisResponse,
 )
@@ -61,21 +63,60 @@ async def analyze_text(req: TextAnalysisRequest):
 async def health():
     """
     System health check.
-    Returns status of Ollama (reachable?), model name, DistilBERT load status.
+    Returns status of the active LLM provider, model name, DistilBERT load status.
     """
-    ollama_ok = await ollama_engine.is_reachable()
+    llm_ok = await ollama_engine.is_reachable()
     distilbert_ok = text_emotion_engine.is_loaded
 
-    overall = "ok" if (ollama_ok and distilbert_ok) else "degraded"
+    overall = "ok" if (llm_ok and distilbert_ok) else "degraded"
 
-    if not ollama_ok:
-        logger.warning("Health check: Ollama unreachable at %s", settings.OLLAMA_BASE_URL)
+    if not llm_ok:
+        logger.warning(
+            "Health check: LLM provider '%s' unreachable (base_url=%s)",
+            ollama_engine.provider_name,
+            ollama_engine.base_url,
+        )
     if not distilbert_ok:
         logger.warning("Health check: DistilBERT not loaded. Error: %s", text_emotion_engine.load_error)
 
     return HealthResponse(
         status=overall,
-        ollama_reachable=ollama_ok,
-        ollama_model=settings.OLLAMA_MODEL,
+        llm_provider=ollama_engine.provider_name,
+        llm_reachable=llm_ok,
+        llm_model=ollama_engine.model_name,
         distilbert_loaded=distilbert_ok,
+    )
+
+
+# ---------------------------------------------------------------------------
+# GET /api/llm/status — Detailed LLM provider status
+# ---------------------------------------------------------------------------
+
+@router.get("/llm/status", response_model=LLMStatusResponse)
+async def llm_status():
+    """
+    Detailed LLM provider status.
+    Reports which provider is active, whether it's reachable,
+    the model being used, and whether a fallback provider is available.
+    """
+    reachable = await ollama_engine.is_reachable()
+
+    # Check if fallback is available
+    provider = ollama_engine.provider_name
+    fallback_available = False
+
+    if provider == "ollama" and settings.GROQ_API_KEY:
+        # Ollama is primary but Groq key exists as potential fallback
+        fallback_available = True
+    elif provider == "groq":
+        # Could potentially fall back to Ollama, but we can't check
+        # without instantiating it — just report False
+        fallback_available = False
+
+    return LLMStatusResponse(
+        provider=provider,
+        reachable=reachable,
+        model=ollama_engine.model_name,
+        base_url=ollama_engine.base_url,
+        fallback_available=fallback_available,
     )

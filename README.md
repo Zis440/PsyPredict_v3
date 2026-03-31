@@ -5,7 +5,7 @@
 ![Status](https://img.shields.io/badge/status-active-success.svg)
 ![Python](https://img.shields.io/badge/backend-FastAPI-009688.svg)
 ![React](https://img.shields.io/badge/frontend-React-cyan.svg)
-![Llama3](https://img.shields.io/badge/LLM-Llama3.3--70B%20%28Groq%29-indigo.svg)
+![Llama3](https://img.shields.io/badge/LLM-Llama3%20%28Groq%20%7C%20Ollama%29-indigo.svg)
 ![Vercel](https://img.shields.io/badge/frontend-Vercel-black)
 
 ---
@@ -15,7 +15,7 @@
 **PsyPredict** is a fully production-grade multimodal mental health AI system. It combines:
 
 - **DistilBERT** multi-label text emotion classification
-- **Llama 3.3 70B** via Groq API for structured clinical reasoning (free, ~2–3 sec response)
+- **Llama 3** via **Groq API** (cloud, default) or **Ollama** (local) for structured clinical reasoning
 - **Keras CNN** facial emotion detection (live webcam)
 - **Zero-shot NLI** crisis detection with automatic override
 - **Weighted multimodal fusion** for a combined distress risk score
@@ -78,7 +78,7 @@ Every chat response includes:
 |-----------|-----------|
 | **Frontend** | React, Vite, TypeScript, TailwindCSS |
 | **Backend** | Python, FastAPI, Uvicorn |
-| **LLM** | Llama 3.3 70B via Groq API (free tier, ~2–3 sec) |
+| **LLM** | Llama 3 via Groq API (cloud) or Ollama (local) |
 | **Text Emotion** | DistilBERT (`bhadresh-savani/distilbert-base-uncased-emotion`) |
 | **Crisis Detection** | MiniLM Zero-Shot NLI |
 | **Face Emotion** | OpenCV + Custom Keras CNN |
@@ -103,7 +103,12 @@ PsyPredict/
 │   │   │   ├── haarcascade_frontalface_default.xml
 │   │   │   └── MEDICATION.csv
 │   │   ├── services/
-│   │   │   ├── ollama_engine.py       # Groq/Llama3.3 async client (named for compatibility)
+│   │   │   ├── base_llm_client.py    # Abstract LLM interface
+│   │   │   ├── groq_client.py        # Groq cloud API client
+│   │   │   ├── ollama_client.py      # Ollama local HTTP client
+│   │   │   ├── llm_provider.py       # Factory — resolves LLM_PROVIDER
+│   │   │   ├── llm_shared.py         # Shared prompt & parsing
+│   │   │   ├── ollama_engine.py      # Backwards-compatible shim
 │   │   │   ├── text_emotion_engine.py # DistilBERT text emotion
 │   │   │   ├── crisis_engine.py       # Zero-shot NLI crisis detection
 │   │   │   ├── fusion_engine.py       # Multimodal weighted fusion
@@ -137,26 +142,32 @@ PsyPredict/
 
 ## Getting Started (Local Development)
 
-### Backend Setup
+### Backend Setup (Ollama — No API Key Needed)
 
 ```bash
+# 1. Install Ollama from https://ollama.com/download
+ollama serve              # Start the server
+ollama pull llama3        # Download the model (~4.7 GB)
+
 cd backend
 
-# Create and activate virtualenv
+# 2. Create and activate virtualenv
 python -m venv venv
 venv\Scripts\Activate        # Windows
 # source venv/bin/activate   # macOS/Linux
 
-# Install dependencies
+# 3. Install dependencies
 pip install -r requirements.txt
 
-# Copy config and add your Groq API key
+# 4. Set up config (defaults to Ollama mode)
 copy .env.example .env
-# Edit .env → set GROQ_API_KEY=gsk_...
+# Edit .env → set LLM_PROVIDER=ollama
 
-# Start backend
+# 5. Start backend
 uvicorn app.main:app --host 0.0.0.0 --port 7860 --reload
 ```
+
+> **Using Groq instead?** Set `LLM_PROVIDER=groq` and `GROQ_API_KEY=gsk_...` in `.env`.
 
 Swagger UI: **http://localhost:7860/docs**
 
@@ -186,15 +197,23 @@ App: **http://localhost:5173**
 | `GET`  | `/api/get_advice?condition=` | Remedy lookup |
 | `POST` | `/api/analyze/text` | Text emotion + crisis pre-screen |
 | `GET`  | `/api/health` | System health check |
+| `GET`  | `/api/llm/status` | LLM provider status |
 
 ---
 
 ## Configuration (`.env`)
 
 ```env
-# ── Groq API (LLM inference) ──────────────────────────────────────────────
+# ── LLM Provider ──────────────────────────────────────────────────────────
+LLM_PROVIDER=ollama            # "groq" (cloud) or "ollama" (local)
+
+# ── Groq API (when LLM_PROVIDER=groq) ────────────────────────────────────
 GROQ_API_KEY=gsk_your_key_here
 GROQ_MODEL=llama-3.3-70b-versatile
+
+# ── Ollama (when LLM_PROVIDER=ollama) ────────────────────────────────────
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL_NAME=llama3
 
 # ── ML Models ─────────────────────────────────────────────────────────────
 DISTILBERT_MODEL=bhadresh-savani/distilbert-base-uncased-emotion
@@ -218,20 +237,21 @@ RATE_LIMIT=30/minute
 |---|---|---|
 | **Frontend** | Vercel | Auto-deploys from GitHub |
 | **Backend** | Hugging Face Spaces | Docker SDK, free tier |
-| **LLM** | Groq API | Free tier, no infrastructure needed |
+| **LLM** | Groq API (cloud) / Ollama (local) | Configurable via `LLM_PROVIDER` |
 
 See `DEPLOY.md` for the full step-by-step deployment guide.
 
 ---
 
-## A Note on the LLM Layer
+## LLM Provider Architecture
 
-The inference engine (`services/ollama_engine.py`) is named after Ollama — the framework
-that originally ran Llama models locally. The current setup routes requests to **Groq's
-hosted API** instead, which runs the same Llama 3.3 70B model on their custom LPU hardware.
-The result is identical model behaviour at ~2–3 second response times with no self-hosted
-infrastructure required. If you ever want to switch back to a self-hosted Ollama instance,
-see `OLLAMA_VPS_GUIDE.md`.
+PsyPredict supports **two LLM providers** via a clean abstraction layer:
+
+- **Groq** (default for cloud/HF Spaces) — Routes to Groq's hosted API at `api.groq.com`, serving Llama 3.3 70B on custom LPU hardware. ~2–3 sec responses, free tier.
+- **Ollama** (for local development) — Routes to a locally-running Ollama server. No API keys needed. Just `ollama serve && ollama pull llama3`.
+
+Switch between them with a single env var: `LLM_PROVIDER=groq` or `LLM_PROVIDER=ollama`.
+Both produce identical API responses and PsychReport schemas.
 
 ---
 

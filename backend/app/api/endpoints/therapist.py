@@ -5,18 +5,12 @@ Full inference pipeline:
   2. Text emotion classification (DistilBERT)
   3. Crisis evaluation (zero-shot NLI) — override if triggered
   4. Multimodal fusion (text + face)
-<<<<<<< HEAD
   5. Patient memory retrieval (adaptive learning)
   6. Gita shloka context injection from CSV corpus
-  7. Ollama/LLaMA 3 structured report generation
+  7. LLM structured report generation (Groq or Ollama)
   8. PsychReport JSON schema validation
   9. Session save for adaptive learning
   10. Streaming response option
-=======
-  5. Ollama/Llama3 structured report generation
-  6. PsychReport JSON schema validation
-  7. Streaming response option
->>>>>>> e0df7c7515413c00067c58471d916a2c19ab0679
 """
 from __future__ import annotations
 

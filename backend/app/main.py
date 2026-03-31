@@ -6,7 +6,7 @@ Replaces Flask. Key features:
   - Rate limiting (SlowAPI)
   - Structured logging (Python logging)
   - Startup model pre-warming
-  - Graceful shutdown (Ollama client cleanup)
+  - Graceful shutdown (LLM client cleanup)
   - FastAPI auto docs at /docs (Swagger) and /redoc
 """
 from __future__ import annotations
@@ -56,15 +56,24 @@ limiter = Limiter(key_func=get_remote_address, default_limits=[settings.RATE_LIM
 async def lifespan(app: FastAPI):
     """
     Startup: pre-warm models (DistilBERT + Crisis classifier).
-    Shutdown: close Ollama async client.
+    Shutdown: close LLM client.
     """
     logger.info("═══════════════════════════════════════")
     logger.info("🚀 PsyPredict v2.0 — Production Backend")
     logger.info("═══════════════════════════════════════")
-    logger.info("Config: Ollama=%s model=%s", settings.OLLAMA_BASE_URL, settings.OLLAMA_MODEL)
+
+    # Import the LLM engine (triggers provider factory)
+    from app.services.ollama_engine import ollama_engine
+
+    logger.info(
+        "LLM Provider: %s (model=%s, base_url=%s)",
+        ollama_engine.provider_name,
+        ollama_engine.model_name,
+        ollama_engine.base_url,
+    )
 
     import asyncio as _asyncio
-    
+
     # Pre-warm DistilBERT text emotion model (in background)
     logger.info("Initializing DistilBERT text emotion model (background)...")
     from app.services.text_emotion_engine import initialize as init_text
@@ -75,18 +84,27 @@ async def lifespan(app: FastAPI):
     from app.services.crisis_engine import initialize_crisis_classifier
     _asyncio.create_task(_asyncio.to_thread(initialize_crisis_classifier))
 
-    # Check Ollama availability (non-blocking warn only)
-    from app.services.ollama_engine import ollama_engine
+    # Check LLM provider availability (non-blocking warn only)
     reachable = await ollama_engine.is_reachable()
     if reachable:
-        logger.info("✅ Ollama reachable at %s (model: %s)", settings.OLLAMA_BASE_URL, settings.OLLAMA_MODEL)
-    else:
-        logger.warning(
-            "⚠️  Ollama NOT reachable at %s — chat will return fallback responses. "
-            "Run: ollama serve && ollama pull %s",
-            settings.OLLAMA_BASE_URL,
-            settings.OLLAMA_MODEL,
+        logger.info(
+            "✅ %s reachable (model: %s)",
+            ollama_engine.provider_name.upper(),
+            ollama_engine.model_name,
         )
+    else:
+        if ollama_engine.provider_name == "ollama":
+            logger.warning(
+                "⚠️  Ollama NOT reachable at %s — chat will return fallback responses. "
+                "Run: ollama serve && ollama pull %s",
+                ollama_engine.base_url,
+                ollama_engine.model_name,
+            )
+        else:
+            logger.warning(
+                "⚠️  Groq API NOT reachable — check GROQ_API_KEY. "
+                "Chat will return fallback responses."
+            )
 
     logger.info("✅ Startup complete. Listening on port 7860.")
     logger.info("   Docs: http://localhost:7860/docs")
@@ -108,7 +126,7 @@ def create_app() -> FastAPI:
         title="PsyPredict API",
         description=(
             "Production-grade multimodal mental health AI system. "
-            "Powered by Llama3 (Ollama) + DistilBERT + Keras CNN facial emotion model."
+            "Powered by Llama3 (Groq/Ollama) + DistilBERT + Keras CNN facial emotion model."
         ),
         version="2.0.0",
         lifespan=lifespan,

@@ -4,12 +4,31 @@
 # Usage:
 #   docker compose up --build
 #
-# This spins up both services locally.
-# For production, the backend is deployed to HF Spaces and
-# the frontend is deployed to Vercel (see DEPLOY.md).
+# This spins up all three services locally:
+#   1. Ollama (LLM server with Llama3)
+#   2. Backend (FastAPI + DistilBERT + Keras)
+#   3. Frontend (Vite dev server)
+#
+# For production, the backend is deployed to HF Spaces (using Groq, not Ollama)
+# and the frontend is deployed to Vercel.
 # ─────────────────────────────────────────────────────────────────────────────
 
 services:
+
+  # ── Ollama (Local LLM Server) ───────────────────────────────────────────────
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:11434/api/tags"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   # ── Backend (FastAPI + Ollama + DistilBERT + Keras) ─────────────────────────
   backend:
@@ -19,20 +38,22 @@ services:
     ports:
       - "7860:7860"       # HF Spaces standard port — keep consistent locally too
     env_file:
-      - ./backend/.env    # OLLAMA_BASE_URL, OLLAMA_MODEL, LOG_LEVEL, etc.
+      - ./backend/.env    # LLM_PROVIDER, OLLAMA_BASE_URL, etc.
     environment:
-      # Override to use container-local Ollama (start.sh handles startup)
-      - OLLAMA_BASE_URL=http://localhost:11434
-    volumes:
-      # Persist Ollama model cache across container restarts (saves re-download time)
-      - ollama_data:/root/.ollama
+      # Override to use the Ollama container (not localhost)
+      - LLM_PROVIDER=ollama
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - OLLAMA_MODEL_NAME=llama3
+    depends_on:
+      ollama:
+        condition: service_healthy
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://localhost:7860/api/health"]
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 120s   # Allow time for Ollama to pull the model on first run
+      start_period: 120s   # Allow time for model downloads on first run
 
   # ── Frontend (Vite Dev Server) ───────────────────────────────────────────────
   frontend:

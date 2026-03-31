@@ -7,16 +7,23 @@ from functools import lru_cache
 
 
 class Settings(BaseSettings):
-    # ── Groq API (replaces Ollama) ────────────────────────────────────────────
+    # ── LLM Provider Selection ────────────────────────────────────────────────
+    # "groq" (default, for HF Spaces) or "ollama" (local development)
+    LLM_PROVIDER: str = "groq"
+
+    # ── Groq API (cloud LLM inference) ────────────────────────────────────────
     GROQ_API_KEY: str = ""
     GROQ_MODEL: str = "llama-3.3-70b-versatile"
 
-    # ── Kept for backwards compatibility (health endpoint reads these) ─────────
+    # ── Ollama (local LLM inference) ──────────────────────────────────────────
     OLLAMA_BASE_URL: str = "http://127.0.0.1:11434"
-    OLLAMA_MODEL: str = "llama-3.3-70b-versatile"
-    OLLAMA_TIMEOUT_S: int = 30
+    OLLAMA_MODEL_NAME: str = "llama3"
+    OLLAMA_TIMEOUT_S: int = 120
     OLLAMA_RETRIES: int = 3
     OLLAMA_RETRY_DELAY_S: float = 2.0
+
+    # ── Legacy compat (health endpoint previously read these) ─────────────────
+    OLLAMA_MODEL: str = "llama3"
 
     # ── DistilBERT Text Emotion ───────────────────────────────────────────────
     DISTILBERT_MODEL: str = "bhadresh-savani/distilbert-base-uncased-emotion"

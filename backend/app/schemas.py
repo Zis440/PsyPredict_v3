@@ -87,12 +87,12 @@ class PsychReport(BaseModel):
     )
     service_degraded: bool = Field(
         default=False,
-        description="True if Ollama was unreachable and fallback was used"
+        description="True if LLM was unreachable and fallback was used"
     )
 
 
 # ---------------------------------------------------------------------------
-# Fallback Report (used when Ollama is unavailable)
+# Fallback Report (used when LLM provider is unavailable)
 # ---------------------------------------------------------------------------
 
 def fallback_report() -> PsychReport:
@@ -109,7 +109,7 @@ def fallback_report() -> PsychReport:
 
 
 # ---------------------------------------------------------------------------
-# Remedy Endpoint  (must be defined BEFORE ChatResponse which references it)
+# Remedy Endpoint
 # ---------------------------------------------------------------------------
 
 class RemedyResponse(BaseModel):
@@ -159,6 +159,14 @@ class ChatRequest(BaseModel):
         return v.lower().strip() if v else "neutral"
 
 
+class ChatResponse(BaseModel):
+    response: str = Field(description="Conversational reply text")
+    report: PsychReport
+    text_emotion: Optional[List[EmotionLabel]] = None
+    fusion_risk_score: Optional[float] = None
+    remedy: Optional[RemedyResponse] = None  # CSV-based remedy data
+
+
 # ---------------------------------------------------------------------------
 # Text Analysis Endpoint
 # ---------------------------------------------------------------------------
@@ -181,50 +189,25 @@ class TextAnalysisResponse(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-<<<<<<< HEAD
-# Facial / Emotion Endpoint
-# ---------------------------------------------------------------------------
-
-class EmotionResponse(BaseModel):
-    emotion: Optional[str] = None
-    confidence: Optional[float] = None
-    face_box: Optional[List[int]] = None
-    message: Optional[str] = None
-    error: Optional[str] = None
-
-
-# ---------------------------------------------------------------------------
-# Remedy Endpoint
-# ---------------------------------------------------------------------------
-
-class RemedyResponse(BaseModel):
-    condition: str
-    symptoms: str
-    treatments: str
-    medications: str
-    dosage: str
-    gita_remedy: str
-
-
-# --- ChatResponse (defined AFTER RemedyResponse to avoid forward-reference) ---
-
-class ChatResponse(BaseModel):
-    response: str = Field(description="Conversational reply text")
-    report: PsychReport
-    text_emotion: Optional[List[EmotionLabel]] = None
-    fusion_risk_score: Optional[float] = None
-    remedy: Optional[RemedyResponse] = None  # CSV-based remedy data
-
-
-# ---------------------------------------------------------------------------
-=======
->>>>>>> e0df7c7515413c00067c58471d916a2c19ab0679
 # Health Endpoint
 # ---------------------------------------------------------------------------
 
 class HealthResponse(BaseModel):
     status: str
-    ollama_reachable: bool
-    ollama_model: str
+    llm_provider: str = "groq"
+    llm_reachable: bool
+    llm_model: str
     distilbert_loaded: bool
     version: str = "2.0.0"
+
+
+# ---------------------------------------------------------------------------
+# LLM Status Endpoint
+# ---------------------------------------------------------------------------
+
+class LLMStatusResponse(BaseModel):
+    provider: str
+    reachable: bool
+    model: str
+    base_url: str
+    fallback_available: bool
