@@ -26,18 +26,18 @@ class EmotionDetector:
         # Load Model
         try:
             self.model = load_model(model_path)
-            logging.info(f"✅ Emotion Model loaded from {model_path}")
+            logging.info(f"[OK] Emotion Model loaded from {model_path}")
         except Exception as e:
-            logging.error(f"❌ Failed to load model: {e}")
+            logging.error(f"[ERROR] Failed to load model: {e}")
 
         # Load Face Detector
         try:
             self.face_cascade = cv2.CascadeClassifier(haar_path)
             if self.face_cascade.empty():
                 raise IOError("Failed to load Haarcascade XML file")
-            logging.info(f"✅ Face Detector loaded from {haar_path}")
+            logging.info(f"[OK] Face Detector loaded from {haar_path}")
         except Exception as e:
-            logging.error(f"❌ Failed to load Haarcascade: {e}")
+            logging.error(f"[ERROR] Failed to load Haarcascade: {e}")
 
     def detect_emotion(self, image_path_or_array):
         """

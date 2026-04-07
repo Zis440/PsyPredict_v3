@@ -73,10 +73,10 @@ def initialize_crisis_classifier() -> None:
             model=local_path if os.path.exists(local_path) else "cross-encoder/nli-MiniLM2-L6-H768",
             device=-1,  # CPU
         )
-        logger.info("✅ Crisis classifier loaded.")
+        logger.info("[OK] Crisis classifier loaded.")
     except Exception as exc:
         _load_error = str(exc)
-        logger.error("❌ Crisis classifier load failed: %s", exc)
+        logger.error("[ERROR] Crisis classifier load failed: %s", exc)
 
 
 def _score_sync(text: str) -> float:

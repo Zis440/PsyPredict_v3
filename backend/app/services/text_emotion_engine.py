@@ -36,10 +36,10 @@ def _load_pipeline(model_name: str) -> None:
             truncation=True,
             max_length=512,
         )
-        logger.info("✅ DistilBERT emotion model loaded successfully.")
+        logger.info("[OK] DistilBERT emotion model loaded successfully.")
     except Exception as exc:
         _load_error = str(exc)
-        logger.error("❌ Failed to load DistilBERT model: %s", exc)
+        logger.error("[ERROR] Failed to load DistilBERT model: %s", exc)
 
 
 def initialize(model_name: str) -> None:

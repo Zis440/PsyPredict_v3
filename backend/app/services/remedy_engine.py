@@ -16,11 +16,11 @@ class RemedyEngine:
                 self.df = pd.read_csv(csv_path)
                 # Normalize column names to be safe
                 self.df.columns = [c.strip() for c in self.df.columns]
-                print("✅ Remedy Engine: Knowledge Base Loaded")
+                print("[OK] Remedy Engine: Knowledge Base Loaded")
             else:
-                print(f"❌ Remedy Engine: CSV not found at {csv_path}")
+                print(f"[ERROR] Remedy Engine: CSV not found at {csv_path}")
         except Exception as e:
-            print(f"❌ Remedy Engine Error: {e}")
+            print(f"[ERROR] Remedy Engine Error: {e}")
 
     def get_remedy(self, condition_name):
         """

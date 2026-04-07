@@ -340,7 +340,7 @@ def build_adaptive_system_prompt(
             style_section += f"\nFramework: {_FRAMEWORK_DIRECTIVES[framework]}"
         if topics_to_avoid:
             style_section += (
-                f"\n⚠️ TOPICS TO AVOID: {', '.join(topics_to_avoid)}. "
+                f"\n[WARNING] TOPICS TO AVOID: {', '.join(topics_to_avoid)}. "
                 f"Do NOT bring up these topics unless the patient specifically raises them."
             )
 

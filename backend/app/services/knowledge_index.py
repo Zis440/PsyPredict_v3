@@ -184,7 +184,7 @@ class KnowledgeIndex:
 
             self._ready = True
             logger.info(
-                "✅ Knowledge index ready: %d documents, dim=%d",
+                "[OK] Knowledge index ready: %d documents, dim=%d",
                 len(self._documents), dim,
             )
             return True

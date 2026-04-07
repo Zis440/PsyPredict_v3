@@ -68,7 +68,7 @@ async def lifespan(app: FastAPI):
       Close both LLM clients gracefully.
     """
     logger.info("═══════════════════════════════════════════════")
-    logger.info("🚀 PsyPredict v1.4 — Emotionally Intelligent AI")
+    logger.info("[BOOT] PsyPredict v1.4 -- Emotionally Intelligent AI")
     logger.info("═══════════════════════════════════════════════")
 
     import asyncio as _asyncio
@@ -80,8 +80,8 @@ async def lifespan(app: FastAPI):
         await orchestrator.initialize()
         logger.info(
             "Orchestrator status: local=%s, cloud=%s",
-            "✅" if orchestrator._local_available else "❌",
-            "✅" if orchestrator._cloud_available else "❌",
+            "YES" if orchestrator._local_available else "NO",
+            "YES" if orchestrator._cloud_available else "NO",
         )
     else:
         # Fallback: use single provider (backward compat)
@@ -94,9 +94,9 @@ async def lifespan(app: FastAPI):
         )
         reachable = await ollama_engine.is_reachable()
         if reachable:
-            logger.info("✅ %s reachable", ollama_engine.provider_name.upper())
+            logger.info("[OK] %s reachable", ollama_engine.provider_name.upper())
         else:
-            logger.warning("⚠️  %s NOT reachable", ollama_engine.provider_name.upper())
+            logger.warning("[WARN] %s NOT reachable", ollama_engine.provider_name.upper())
 
     # ── 2. Pre-warm ML Models (background) ───────────────────────────────────
     logger.info("Initializing DistilBERT text emotion model (background)...")
@@ -124,10 +124,10 @@ async def lifespan(app: FastAPI):
         supabase_key=settings.SUPABASE_SERVICE_KEY,
         max_sessions=settings.PATIENT_HISTORY_MAX_SESSIONS,
     )
-    logger.info("✅ Patient memory initialized (%s)", settings.PATIENT_MEMORY_BACKEND)
+    logger.info("[OK] Patient memory initialized (%s)", settings.PATIENT_MEMORY_BACKEND)
 
     logger.info("═══════════════════════════════════════════════")
-    logger.info("✅ Startup complete. Listening on port 7860.")
+    logger.info("[OK] Startup complete. Listening on port 7860.")
     logger.info("   Docs:         http://localhost:7860/docs")
     logger.info("   Orchestrator: http://localhost:7860/api/orchestrator/status")
     logger.info("═══════════════════════════════════════════════")

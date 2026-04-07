@@ -129,17 +129,17 @@ class LLMOrchestrator:
             self._local_available = await self._local.is_reachable()
             if self._local_available:
                 logger.info(
-                    "✅ Orchestrator: Local LLM (Ollama) ready — model=%s, url=%s",
+                    "[OK] Orchestrator: Local LLM (Ollama) ready -- model=%s, url=%s",
                     self._local.model_name,
                     self._local.base_url,
                 )
             else:
                 logger.warning(
-                    "⚠️  Orchestrator: Local LLM (Ollama) NOT reachable at %s",
+                    "[WARN] Orchestrator: Local LLM (Ollama) NOT reachable at %s",
                     settings.OLLAMA_BASE_URL,
                 )
         except Exception as exc:
-            logger.error("❌ Orchestrator: Failed to initialize Ollama client: %s", exc)
+            logger.error("[ERROR] Orchestrator: Failed to initialize Ollama client: %s", exc)
             self._local = None
 
         # Initialize cloud client (Groq)
@@ -150,19 +150,19 @@ class LLMOrchestrator:
                 self._cloud_available = await self._cloud.is_reachable()
                 if self._cloud_available:
                     logger.info(
-                        "✅ Orchestrator: Cloud LLM (Groq) ready — model=%s",
+                        "[OK] Orchestrator: Cloud LLM (Groq) ready -- model=%s",
                         self._cloud.model_name,
                     )
                 else:
-                    logger.warning("⚠️  Orchestrator: Cloud LLM (Groq) NOT reachable")
+                    logger.warning("[WARN] Orchestrator: Cloud LLM (Groq) NOT reachable")
             else:
                 logger.info("Orchestrator: Groq API key not set — cloud LLM disabled")
         except Exception as exc:
-            logger.error("❌ Orchestrator: Failed to initialize Groq client: %s", exc)
+            logger.error("[ERROR] Orchestrator: Failed to initialize Groq client: %s", exc)
             self._cloud = None
 
         if not self._local_available and not self._cloud_available:
-            logger.error("❌ Orchestrator: NO LLM providers available!")
+            logger.error("[ERROR] Orchestrator: NO LLM providers available!")
 
         self._initialized = True
 
@@ -416,8 +416,14 @@ class LLMOrchestrator:
         """
         Stream a response using intelligent dual-LLM routing.
         Fallback is attempted if the primary provider fails to connect.
+        Appends a ---ROUTING--- metadata chunk at the end of the stream.
         """
+        import json as _json
+
+        start_time = time.monotonic()
+
         has_pii = False
+        scrub_result: Optional[ScrubResult] = None
         if self._settings.PII_SCRUB_BEFORE_CLOUD:
             has_pii = self._scrubber.has_pii(user_text)
 
@@ -427,6 +433,11 @@ class LLMOrchestrator:
 
         if primary is None:
             yield "\n[No LLM providers available. Please check your configuration.]\n"
+            elapsed = (time.monotonic() - start_time) * 1000
+            yield "\n---ROUTING---\n" + _json.dumps({
+                "provider_used": "none", "task_type": task_type.value,
+                "latency_ms": round(elapsed, 1), "error": "No LLM providers available",
+            })
             return
 
         effective_text = user_text
@@ -444,6 +455,14 @@ class LLMOrchestrator:
                 gita_context=gita_context,
             ):
                 yield token
+            # Primary succeeded — emit routing metadata
+            elapsed = (time.monotonic() - start_time) * 1000
+            yield "\n---ROUTING---\n" + _json.dumps({
+                "provider_used": primary_name, "task_type": task_type.value,
+                "latency_ms": round(elapsed, 1),
+                "pii_scrubbed": scrub_result.pii_found if scrub_result else False,
+                "pii_types": scrub_result.pii_types if scrub_result else [],
+            })
             return
         except Exception as exc:
             logger.error(
@@ -454,9 +473,10 @@ class LLMOrchestrator:
         # Try fallback for streaming
         if fallback is not None:
             fb_text = user_text
+            fb_scrub: Optional[ScrubResult] = None
             if fallback_name == "groq" and self._settings.PII_SCRUB_BEFORE_CLOUD:
-                scrub_result = self._scrubber.scrub(user_text)
-                fb_text = scrub_result.scrubbed_text
+                fb_scrub = self._scrubber.scrub(user_text)
+                fb_text = fb_scrub.scrubbed_text
 
             try:
                 async for token in fallback.generate_stream(
@@ -468,6 +488,15 @@ class LLMOrchestrator:
                     gita_context=gita_context,
                 ):
                     yield token
+                # Fallback succeeded — emit routing metadata
+                elapsed = (time.monotonic() - start_time) * 1000
+                yield "\n---ROUTING---\n" + _json.dumps({
+                    "provider_used": fallback_name, "task_type": task_type.value,
+                    "latency_ms": round(elapsed, 1), "fallback_used": True,
+                    "fallback_provider": primary_name,
+                    "pii_scrubbed": fb_scrub.pii_found if fb_scrub else False,
+                    "pii_types": fb_scrub.pii_types if fb_scrub else [],
+                })
                 return
             except Exception as exc2:
                 logger.error(
@@ -475,7 +504,13 @@ class LLMOrchestrator:
                     fallback_name, exc2,
                 )
 
+        elapsed = (time.monotonic() - start_time) * 1000
         yield "\n[All inference services failed. Please try again.]\n"
+        yield "\n---ROUTING---\n" + _json.dumps({
+            "provider_used": "none", "task_type": task_type.value,
+            "latency_ms": round(elapsed, 1), "fallback_used": True,
+            "error": "All LLM providers failed",
+        })
 
     # ------------------------------------------------------------------
     # Health Checks

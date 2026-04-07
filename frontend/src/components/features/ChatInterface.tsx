@@ -312,7 +312,7 @@ const ChatInterface: React.FC<ChatProps> = ({ currentEmotion, sessionId }) => {
           const stream = streamChatMessage(userText, currentEmotion, historyForApi);
           for await (const chunk of stream) {
             fullResponse += chunk;
-            const displayContent = fullResponse.split("---JSON---")[0].trim();
+            const displayContent = fullResponse.split("---JSON---")[0].split("---ROUTING---")[0].trim();
             setMessages((prev) => {
               const n = [...prev];
               n[n.length - 1] = { ...botMsg, content: displayContent };
@@ -322,15 +322,26 @@ const ChatInterface: React.FC<ChatProps> = ({ currentEmotion, sessionId }) => {
 
           let finalReply = fullResponse;
           let report: PsychReport | undefined;
+          let routing: any = undefined;
+          
+          if (fullResponse.includes("---ROUTING---")) {
+            const routingParts = fullResponse.split("---ROUTING---");
+            fullResponse = routingParts[0];
+            try { routing = JSON.parse(routingParts[1].trim()); }
+            catch (e) { console.warn("Routing parse failed:", e); }
+          }
+
           if (fullResponse.includes("---JSON---")) {
             const parts = fullResponse.split("---JSON---");
             finalReply = parts[0].trim();
             try { report = JSON.parse(parts[1].trim().replace(/```json|```/g, "")); }
             catch (e) { console.warn("JSON parse failed:", e); }
+          } else {
+            finalReply = fullResponse.trim();
           }
 
           const remedy = report ? await fetchRemedyForReport(report) : undefined;
-          const finalBotMsg: Message = { role: "assistant", content: finalReply, report, remedy };
+          const finalBotMsg: Message = { role: "assistant", content: finalReply, report, remedy, routing };
           setMessages((prev) => {
             const updated = [...prev];
             updated[updated.length - 1] = finalBotMsg;
@@ -381,7 +392,7 @@ const ChatInterface: React.FC<ChatProps> = ({ currentEmotion, sessionId }) => {
         const stream = streamChatMessage(userText, currentEmotion, historyForApi);
         for await (const chunk of stream) {
           fullResponse += chunk;
-          const displayContent = fullResponse.split("---JSON---")[0].trim();
+          const displayContent = fullResponse.split("---JSON---")[0].split("---ROUTING---")[0].trim();
           setMessages((prev) => {
             const n = [...prev];
             n[n.length - 1] = { ...botMsg, content: displayContent };
@@ -391,15 +402,26 @@ const ChatInterface: React.FC<ChatProps> = ({ currentEmotion, sessionId }) => {
 
         let finalReply = fullResponse;
         let report: PsychReport | undefined;
+        let routing: any = undefined;
+        
+        if (fullResponse.includes("---ROUTING---")) {
+          const routingParts = fullResponse.split("---ROUTING---");
+          fullResponse = routingParts[0];
+          try { routing = JSON.parse(routingParts[1].trim()); }
+          catch (e) { console.warn("Routing parse failed:", e); }
+        }
+
         if (fullResponse.includes("---JSON---")) {
           const parts = fullResponse.split("---JSON---");
           finalReply = parts[0].trim();
           try { report = JSON.parse(parts[1].trim().replace(/```json|```/g, "")); }
           catch (e) { console.warn("JSON parse failed:", e); }
+        } else {
+          finalReply = fullResponse.trim();
         }
 
         const remedy = report ? await fetchRemedyForReport(report) : undefined;
-        const finalBotMsg: Message = { role: "assistant", content: finalReply, report, remedy };
+        const finalBotMsg: Message = { role: "assistant", content: finalReply, report, remedy, routing };
         setMessages((prev) => {
           const n = [...prev];
           n[n.length - 1] = finalBotMsg;
@@ -409,7 +431,7 @@ const ChatInterface: React.FC<ChatProps> = ({ currentEmotion, sessionId }) => {
         await createMessage({
           conversationId: activeConversationId as Id<"conversations">,
           content: finalReply,
-          metadata: { role: 'assistant', report, remedy },
+          metadata: { role: 'assistant', report, remedy, routing },
         });
       } catch (streamError) {
         console.warn("Streaming failed, using fallback:", streamError);

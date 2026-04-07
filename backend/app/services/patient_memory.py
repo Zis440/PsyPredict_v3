@@ -111,12 +111,12 @@ class PatientMemoryEngine:
 
             self._db_path = sqlite_path
             self._init_sqlite()
-            logger.info("✅ PatientMemory initialized (SQLite: %s)", sqlite_path)
+            logger.info("[OK] PatientMemory initialized (SQLite: %s)", sqlite_path)
         elif backend == "supabase":
             try:
                 from supabase import create_client
                 self._supabase = create_client(supabase_url, supabase_key)
-                logger.info("✅ PatientMemory initialized (Supabase)")
+                logger.info("[OK] PatientMemory initialized (Supabase)")
             except ImportError:
                 logger.warning("supabase package not installed, falling back to SQLite")
                 self.backend = "sqlite"

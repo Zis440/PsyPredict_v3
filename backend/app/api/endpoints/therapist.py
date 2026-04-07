@@ -225,6 +225,9 @@ async def chat(req: ChatRequest):  # type: ignore[misc]
     if req.stream:
         # Streaming response
         async def stream_generator():
+            import json as _json
+            import time as _time
+
             if use_orchestrator:
                 async for token in orchestrator.generate_stream(
                     user_text=user_text,
@@ -236,6 +239,7 @@ async def chat(req: ChatRequest):  # type: ignore[misc]
                 ):
                     yield token
             else:
+                _start = _time.monotonic()
                 async for token in ollama_engine.generate_stream(
                     user_text=user_text,
                     face_emotion=face_emotion,
@@ -245,6 +249,12 @@ async def chat(req: ChatRequest):  # type: ignore[misc]
                     gita_context=gita_context,
                 ):
                     yield token
+                _elapsed = (_time.monotonic() - _start) * 1000
+                yield "\n---ROUTING---\n" + _json.dumps({
+                    "provider_used": ollama_engine.provider_name,
+                    "task_type": "routine_chat",
+                    "latency_ms": round(_elapsed, 1),
+                })
 
         return StreamingResponse(stream_generator(), media_type="text/plain")
 
