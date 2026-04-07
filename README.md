@@ -12,7 +12,7 @@
 
 ## Overview
 
-**PsyPredict** is a fully production-grade multimodal mental health AI system. It combines:
+**PsyPredict** is a fully production-grade multimodal mental health AI system. It combines :
 
 - **DistilBERT** multi-label text emotion classification
 - **Llama 3** via **Groq API** (cloud, default) or **Ollama** (local) for structured clinical reasoning
