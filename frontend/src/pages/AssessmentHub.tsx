@@ -18,7 +18,7 @@ const AssessmentHub: React.FC = () => {
       icon: Shield,
       color: "emerald",
       time: "10-15 min",
-      description: "Quick mental wellness screening. Measures stress, burnout, recovery, sleep, and emotional health.",
+      description: "Quick mental wellness check. Measures stress, burnout, recovery, sleep, and emotional health.",
       features: ["Stress Indicators", "Burnout Risk", "Sleep Quality", "Emotional State"]
     },
     {

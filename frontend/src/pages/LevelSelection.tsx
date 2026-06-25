@@ -24,13 +24,12 @@ export const LevelSelection: React.FC = () => {
   const packages = [
     {
       id: 1,
-      title: isStudent ? "Student Wellbeing Pulse (EWSA)" : "Employee Mental Health & Wellbeing Screening (EWSA)",
+      title: isStudent ? "Student Wellbeing Pulse (EWSA)" : "Employee Mental Health & Wellbeing (EWSA)",
       short: "Level 1 — Basic",
       icon: Shield,
       color: "emerald",
       time: "10-15 min",
-      items: "32 items (22 Core + 5 Scenarios + 5 Validity)",
-      description: "Unique dynamically generated mental wellness screening. Measures stress, burnout, emotional health, distress, sleep, and work-life balance.",
+      description: "Unique dynamically generated mental wellness check. Measures stress, burnout, emotional health, distress, sleep, and work-life balance.",
     },
     {
       id: 2,
@@ -39,7 +38,6 @@ export const LevelSelection: React.FC = () => {
       icon: Brain,
       color: "indigo",
       time: "20-25 min",
-      items: "85 items (60 Core + 15 Scenarios + 10 Validity)",
       description: "Dynamic behavioral analysis. Measures workplace personality, performance drivers, team effectiveness, and adaptability.",
     },
     {
@@ -49,7 +47,6 @@ export const LevelSelection: React.FC = () => {
       icon: Sparkles,
       color: "purple",
       time: "25-40 min",
-      items: "80 items (50 Core + 20 Scenarios + 10 Validity)",
       description: "Deep psychological job-fit analysis. Includes logic reasoning, attention tests, ethics scenarios, priority ranking, and reliability mapping.",
     }
   ];
@@ -118,7 +115,7 @@ export const LevelSelection: React.FC = () => {
                 
                 <div className="flex-1 text-center md:text-left">
                   <div className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-1 flex items-center justify-center md:justify-start gap-2">
-                    {pkg.short} • {pkg.time} • {pkg.items}
+                    {pkg.short} • {pkg.time}
                   </div>
                   <h3 className="text-xl md:text-2xl font-bold text-gray-900 mb-2">
                     {pkg.title}

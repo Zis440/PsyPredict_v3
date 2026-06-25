@@ -53,7 +53,7 @@ const SegmentSelection: React.FC = () => {
               <div className="space-y-3 mb-6">
                 <div className="flex items-center gap-3 text-sm text-slate-300">
                   <BookOpen className="w-4 h-4 text-emerald-400 shrink-0" />
-                  <span>Academic burnout & exam stress screening</span>
+                  <span>Academic burnout & exam stress check</span>
                 </div>
                 <div className="flex items-center gap-3 text-sm text-slate-300">
                   <Sparkles className="w-4 h-4 text-emerald-400 shrink-0" />
