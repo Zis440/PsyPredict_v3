@@ -31,6 +31,10 @@ from app.api.endpoints.therapist import router as therapist_router
 from app.api.endpoints.analysis import router as analysis_router
 from app.api.endpoints.progress import router as progress_router
 from app.api.endpoints.orchestrator_status import router as orchestrator_router
+from app.api.endpoints.mind_model import router as mind_model_router
+from app.api.endpoints.visual_psychology import router as visual_router
+from app.api.endpoints.assessment_engine import router as assessment_router
+from app.api.endpoints.reports import router as reports_router
 
 settings = get_settings()
 
@@ -191,6 +195,10 @@ def create_app() -> FastAPI:
     app.include_router(analysis_router, prefix="/api", tags=["Text Analysis & Health"])
     app.include_router(progress_router, tags=["Patient Progress"])
     app.include_router(orchestrator_router, tags=["Orchestrator"])
+    app.include_router(mind_model_router, prefix="/api", tags=["Mind Model & Memory Analytics"])
+    app.include_router(visual_router, prefix="/api/visual", tags=["Visual Psychology"])
+    app.include_router(assessment_router, prefix="/api/assessments", tags=["Assessments"])
+    app.include_router(reports_router, prefix="/api/reports", tags=["Master Reports"])
 
     return app
 

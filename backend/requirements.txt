@@ -36,9 +36,9 @@ gdown
 
 # ── Deep Learning: PyTorch CPU + HuggingFace Transformers ────────────────────
 torch>=2.0.0 --index-url https://download.pytorch.org/whl/cpu
-transformers>=4.40.0
+transformers>=4.41.0
 sentencepiece==0.1.99
-huggingface-hub>=0.23.0
+huggingface-hub>=0.25.0
 
 # ── Utilities ─────────────────────────────────────────────────────────────────
 requests
@@ -55,3 +55,5 @@ pytest-asyncio>=0.23.0
 faiss-cpu>=1.7.4
 sentence-transformers>=2.7.0
 
+# ── Semantic Vector Memory ────────────────────────────────────────────────────
+chromadb>=0.4.0

@@ -27,6 +27,17 @@ class MessageRole(str, Enum):
     ASSISTANT = "assistant"
 
 
+class UserSegment(str, Enum):
+    STUDENT = "student"
+    PROFESSIONAL = "professional"
+
+
+class PackageType(str, Enum):
+    PACKAGE_1_WELLBEING = "pkg1_wellbeing"
+    PACKAGE_2_WORKFORCE = "pkg2_workforce"
+    PACKAGE_3_JOBFIT = "pkg3_jobfit"
+
+
 class TaskType(str, Enum):
     """Types of LLM tasks with different routing priorities."""
     ROUTINE_CHAT = "routine_chat"
@@ -241,6 +252,7 @@ class LLMStatusResponse(BaseModel):
 class PatientPreferences(BaseModel):
     """Patient's therapeutic preferences for adaptive personalization."""
     user_id: str
+    segment: UserSegment = Field(default=UserSegment.PROFESSIONAL, description="User segment for contextual assessments")
     preferred_tone: str = Field(default="warm", description="warm, formal, motivational, calm, structured")
     verbosity: str = Field(default="moderate", description="concise, moderate, detailed")
     framework_preference: str = Field(default="auto", description="cbt, dbt, psychodynamic, gita, auto")
@@ -321,3 +333,115 @@ class SessionFeedback(BaseModel):
     rating: int = Field(ge=1, le=5, description="1-5 star rating")
     comment: Optional[str] = Field(default=None, max_length=500)
     message_id: Optional[str] = None
+
+
+# ---------------------------------------------------------------------------
+# Assessment Schemas (SJT, Writing, Visual)
+# ---------------------------------------------------------------------------
+
+class AssessmentType(str, Enum):
+    SJT = "SJT"
+    WRITING = "WRITING"
+    VISUAL = "VISUAL"
+
+class AssessmentScenario(BaseModel):
+    id: str
+    type: AssessmentType
+    title: str
+    description: str
+    image_url: Optional[str] = None
+    questions: List[str]
+
+class AssessmentResult(BaseModel):
+    scenario_id: str
+    user_response: str
+    analysis: str
+    scores: Dict[str, float]  # e.g., "empathy": 0.8
+    timestamp: str
+
+# ---------------------------------------------------------------------------
+# Assessment Segments and Packages
+# ---------------------------------------------------------------------------
+
+class DomainScore(BaseModel):
+    domain_name: str
+    score: float = Field(ge=0.0, le=100.0)
+    confidence: float = Field(default=85.0, ge=0.0, le=100.0)
+    evidence: List[str] = Field(default_factory=list)
+
+class DetailedPDFReport(BaseModel):
+    role_fitment_score: float = Field(ge=0.0, le=100.0)
+    growth_potential_score: float = Field(ge=0.0, le=100.0)
+    executive_summary: List[str] = Field(default_factory=list)
+    key_strengths: List[str] = Field(default_factory=list)
+    development_areas: List[str] = Field(default_factory=list)
+    coworking_insights: Dict[str, str] = Field(default_factory=dict)
+    personality_insights: Dict[str, List[str]] = Field(default_factory=dict)
+
+class PackageResult(BaseModel):
+    user_id: str
+    package_type: PackageType
+    segment: UserSegment
+    timestamp: str
+    validity_score: float = Field(ge=0.0, le=100.0)
+    domain_scores: List[DomainScore]
+    final_risk_level: Optional[RiskLevel] = None
+    detailed_report: Optional[DetailedPDFReport] = None
+    raw_answers: List[Dict[str, Any]] = Field(default_factory=list)
+
+
+# ---------------------------------------------------------------------------
+# Master Report
+# ---------------------------------------------------------------------------
+
+class MetricScore(BaseModel):
+    score: float = Field(ge=0, le=100)
+    confidence: float = Field(ge=0, le=100)
+    evidence: List[str] = Field(default_factory=list)
+
+class ExecutiveScores(BaseModel):
+    personality_health: MetricScore
+    mental_wellness: MetricScore
+    emotional_intelligence: MetricScore
+    communication: MetricScore
+    behavioral_stability: MetricScore
+    stress: MetricScore
+    anxiety: MetricScore
+    resilience: MetricScore
+    leadership: MetricScore
+    growth_potential: MetricScore
+    career_readiness: MetricScore
+    team_compatibility: MetricScore
+    skill_proficiency: MetricScore
+    role_fitment: MetricScore
+    overall_intelligence_index: MetricScore
+
+class MasterReport(BaseModel):
+    user_id: str
+    generated_at: str
+    executive_summary: str
+    scores: ExecutiveScores
+    personality_profile: str
+    emotional_intelligence_analysis: str
+    mental_wellness_analysis: str
+    behavioral_analysis: str
+    communication_analysis: str
+    leadership_analysis: str
+    conflict_analysis: str
+    career_analysis: str
+    skill_assessment_results: str
+    growth_potential_analysis: str
+    relationship_health_analysis: str = ""
+    life_purpose_analysis: str = ""
+    cognitive_patterns_analysis: str = ""
+    spiritual_wellbeing_analysis: str = ""
+    strengths: List[str]
+    weaknesses: List[str]
+    development_areas: List[str]
+    risk_indicators: List[str]
+    recommendations: List[str]
+    improvement_roadmap: str
+    action_plan: str
+    future_growth_predictions: str
+    bhagavad_gita_wisdom: str
+    raw_responses: List[Dict[str, Any]] = Field(default_factory=list)

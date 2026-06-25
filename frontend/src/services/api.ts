@@ -8,7 +8,7 @@ if (!BASE_URL) {
 }
 
 // Create a configured instance of axios
-const apiClient = axios.create({
+export const apiClient = axios.create({
   baseURL: `${BASE_URL}/api`,
 });
 
@@ -88,6 +88,7 @@ export interface HealthResponse {
 
 export interface PatientPreferences {
   user_id: string;
+  segment: 'student' | 'professional';
   preferred_tone: string;
   verbosity: string;
   framework_preference: string;
@@ -132,6 +133,61 @@ export interface OrchestratorStatus {
     local_errors: number;
     cloud_errors: number;
   };
+}
+
+// --- New Schemas for Assessments and Master Reports ---
+
+export interface AssessmentScenario {
+  id: string;
+  type: string;
+  title: string;
+  description: string;
+  image_url?: string;
+  questions: string[];
+}
+
+export interface ExecutiveScores {
+  personality_health: number;
+  mental_wellness: number;
+  emotional_intelligence: number;
+  communication: number;
+  behavioral_stability: number;
+  stress: number;
+  anxiety: number;
+  resilience: number;
+  leadership: number;
+  growth_potential: number;
+  career_readiness: number;
+  team_compatibility: number;
+  skill_proficiency: number;
+  role_fitment: number;
+  overall_intelligence_index: number;
+}
+
+export interface MasterReport {
+  user_id: string;
+  generated_at: string;
+  executive_summary: string;
+  scores: ExecutiveScores;
+  personality_profile: string;
+  emotional_intelligence_analysis: string;
+  mental_wellness_analysis: string;
+  behavioral_analysis: string;
+  communication_analysis: string;
+  leadership_analysis: string;
+  conflict_analysis: string;
+  career_analysis: string;
+  skill_assessment_results: string;
+  growth_potential_analysis: string;
+  strengths: string[];
+  weaknesses: string[];
+  development_areas: string[];
+  risk_indicators: string[];
+  recommendations: string[];
+  improvement_roadmap: string;
+  action_plan: string;
+  future_growth_predictions: string;
+  bhagavad_gita_wisdom: string;
 }
 
 // --- API Functions ---
@@ -271,6 +327,28 @@ export const submitSessionFeedback = async (
 // 10. Orchestrator Status
 export const getOrchestratorStatus = async (): Promise<OrchestratorStatus> => {
   const response = await apiClient.get("/orchestrator/status");
+  return response.data;
+};
+
+// 11. Assessments (now segment-aware)
+export const getSjtScenario = async (segment: string = 'professional'): Promise<AssessmentScenario> => {
+  const response = await apiClient.get(`/assessments/sjt?segment=${segment}`);
+  return response.data;
+};
+
+export const getWritingScenario = async (segment: string = 'professional'): Promise<AssessmentScenario> => {
+  const response = await apiClient.get(`/assessments/writing?segment=${segment}`);
+  return response.data;
+};
+
+export const getVisualScenarios = async (userId: string = "anonymous"): Promise<{ scenarios: AssessmentScenario[] }> => {
+  const response = await apiClient.get(`/visual/scenarios?user_id=${userId}`);
+  return response.data;
+};
+
+// 12. Master Report (segment-aware)
+export const generateMasterReport = async (userId: string, segment: string = 'professional'): Promise<MasterReport> => {
+  const response = await apiClient.post(`/reports/generate/${userId}?segment=${segment}`);
   return response.data;
 };
 

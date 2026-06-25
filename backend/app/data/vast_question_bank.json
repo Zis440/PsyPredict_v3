@@ -1,0 +1,586 @@
+{
+  "stress": [
+    {
+      "id": "s1",
+      "is_reverse": false,
+      "variations": [
+        "In the last month, how often have you been upset because of something that happened unexpectedly?",
+        "How often in the past month have unexpected events caused you distress?",
+        "In the last month, how frequently have you felt unsettled due to unforeseen circumstances?",
+        "Over the past month, how many times have unexpected happenings left you feeling upset?",
+        "During the last month, how often have unforeseen situations led to you feeling disturbed or upset?"
+      ]
+    },
+    {
+      "id": "s2",
+      "is_reverse": false,
+      "variations": [
+        "In the last month, how often have you felt that you were unable to control the important things in your life?",
+        "Over the past month, how frequently have you experienced a lack of control over life's significant events?",
+        "In the last 30 days, to what extent have you felt powerless to influence the major aspects of your life?",
+        "During the past month, how often did you feel that things in your life were beyond your control?",
+        "How often in the last month have you had the feeling that you were at the mercy of events and unable to affect the things that matter most to you?"
+      ]
+    },
+    {
+      "id": "s3",
+      "is_reverse": false,
+      "variations": [
+        "In the last month, how often have you felt nervous and stressed?",
+        "How frequently have you experienced anxiety and tension over the past month?",
+        "Over the last month, how often have you been feeling on edge and overwhelmed?",
+        "In the past month, how many times have you felt apprehensive and under a lot of stress?",
+        "During the last month, how often have you had feelings of worry and emotional strain?"
+      ]
+    },
+    {
+      "id": "s4",
+      "is_reverse": true,
+      "variations": [
+        "In the last month, how often have you felt confident about your ability to handle your personal problems?",
+        "How often in the past month have you felt capable of managing your personal issues?",
+        "Over the last month, how frequently have you felt self-assured in dealing with your personal difficulties?",
+        "In the last month, how often have you felt you could cope with your personal problems effectively?",
+        "During the past month, how frequently have you felt assured in your ability to tackle your personal challenges?"
+      ]
+    },
+    {
+      "id": "s5",
+      "is_reverse": true,
+      "variations": [
+        "In the last month, how often have you felt that things were going your way?",
+        "How frequently have you experienced a sense of everything falling into place over the past month?",
+        "Over the last month, how often did you feel like things were working out in your favor?",
+        "In the past month, how often have you had the feeling that events were unfolding as you had hoped?",
+        "During the last month, how often have you felt like you were on a roll and things were going smoothly?"
+      ]
+    },
+    {
+      "id": "s6",
+      "is_reverse": false,
+      "variations": [
+        "In the last month, how often have you found that you could not cope with all the things that you had to do?",
+        "How often in the past month have you felt overwhelmed by your responsibilities?",
+        "In the last month, how frequently did you feel unable to manage your workload?",
+        "Over the past month, how many times have you struggled to keep up with your tasks and duties?",
+        "During the last month, how often did you feel that your workload was more than you could handle?"
+      ]
+    },
+    {
+      "id": "s7",
+      "is_reverse": true,
+      "variations": [
+        "In the last month, how often have you been able to control irritations in your life?",
+        "How often have you managed to keep calm when faced with frustrating situations in the past month?",
+        "In the last month, to what extent have you been able to regulate your annoyance when things didn't go as planned?",
+        "Over the past month, how frequently have you been successful in handling irritating events without getting upset?",
+        "During the last month, how often have you found yourself able to cope with annoying situations without losing your temper?"
+      ]
+    },
+    {
+      "id": "s8",
+      "is_reverse": true,
+      "variations": [
+        "In the last month, how often have you felt that you were on top of things?",
+        "How often in the past month have you felt in control of your life?",
+        "Over the last month, how frequently have you felt like you had everything under control?",
+        "In the last month, how many times have you felt like you were managing everything effectively?",
+        "During the past month, how often did you feel like you were handling things successfully?"
+      ]
+    },
+    {
+      "id": "s9",
+      "is_reverse": false,
+      "variations": [
+        "In the last month, how often have you been angered because of things that happened that were outside of your control?",
+        "Over the past month, how frequently have you felt irritated by events beyond your influence?",
+        "In the last month, how often did you become frustrated due to circumstances you couldn't control?",
+        "During the past month, to what extent have you experienced anger triggered by uncontrollable situations?",
+        "How often in the last month have you gotten upset because of things that happened that were beyond your power to change?"
+      ]
+    },
+    {
+      "id": "s10",
+      "is_reverse": false,
+      "variations": [
+        "In the last month, how often have you felt difficulties were piling up so high that you could not overcome them?",
+        "In the past month, how frequently have you experienced problems that seemed insurmountable and overwhelming?",
+        "Over the last month, how often did you feel like your challenges were mounting and becoming too difficult to manage?",
+        "During the last month, how many times have you felt like you were facing obstacles that were too great to overcome?",
+        "In the last 30 days, how often have you felt overwhelmed by the accumulation of difficulties that seemed impossible to surmount?"
+      ]
+    }
+  ],
+  "burnout": [
+    {
+      "id": "b1",
+      "is_reverse": false,
+      "variations": [
+        "I feel emotionally drained by my work.",
+        "My job leaves me feeling exhausted emotionally",
+        "I feel depleted by the emotional demands of my work",
+        "Work has been draining my emotional energy lately",
+        "I often feel emotionally spent after a day of work"
+      ]
+    },
+    {
+      "id": "b2",
+      "is_reverse": false,
+      "variations": [
+        "Working with people all day long requires a great deal of effort.",
+        "Interacting with others throughout the day is extremely draining",
+        "I find it exhausting to be around people all day",
+        "Dealing with people on a daily basis takes a lot out of me",
+        "Constantly working with others requires significant emotional energy"
+      ]
+    },
+    {
+      "id": "b3",
+      "is_reverse": false,
+      "variations": [
+        "I feel like my work is breaking me down.",
+        "My job is taking a toll on my well-being",
+        "I feel drained by my work",
+        "My work is exhausting me emotionally",
+        "I'm feeling worn down by my professional responsibilities"
+      ]
+    },
+    {
+      "id": "b4",
+      "is_reverse": false,
+      "variations": [
+        "I feel frustrated by my work.",
+        "I feel annoyed with my job",
+        "My work is a source of irritation for me",
+        "I experience frustration in my professional life",
+        "My job often leaves me feeling exasperated"
+      ]
+    },
+    {
+      "id": "b5",
+      "is_reverse": false,
+      "variations": [
+        "I feel I work too hard at my job.",
+        "My job demands too much effort from me",
+        "I put in excessive time and energy at work",
+        "I feel overworked in my current role",
+        "My workload is more than I can reasonably handle"
+      ]
+    },
+    {
+      "id": "b6",
+      "is_reverse": false,
+      "variations": [
+        "It stresses me too much to work in direct contact with people.",
+        "I find it overly taxing to interact with clients or customers on a regular basis",
+        "Working closely with others is too demanding for me",
+        "Dealing directly with people at work is a significant source of stress for me",
+        "I experience excessive anxiety when I have to engage with the public as part of my job"
+      ]
+    },
+    {
+      "id": "b7",
+      "is_reverse": false,
+      "variations": [
+        "I feel like I\u2019m at the end of my rope.",
+        "I'm feeling completely drained",
+        "I've reached my breaking point",
+        "I'm at my wit's end",
+        "I feel like I'm running on empty"
+      ]
+    },
+    {
+      "id": "b8",
+      "is_reverse": false,
+      "variations": [
+        "I often feel exhausted at the end of the day.",
+        "By the end of the day, I usually feel drained",
+        "I frequently feel depleted of energy after a day's work",
+        "Day after day, I feel like I'm running on empty",
+        "At the end of each day, I often feel completely spent"
+      ]
+    }
+  ],
+  "wellbeing": [
+    {
+      "id": "w1",
+      "is_reverse": true,
+      "variations": [
+        "I\u2019ve been feeling optimistic about the future",
+        "I have a positive outlook on what's to come",
+        "The future looks bright to me",
+        "I'm feeling hopeful about what the future holds",
+        "I'm confident that good things are ahead"
+      ]
+    },
+    {
+      "id": "w2",
+      "is_reverse": true,
+      "variations": [
+        "I\u2019ve been feeling useful",
+        "I've felt like I'm making a positive contribution",
+        "My life has had purpose lately",
+        "I've been feeling like I'm needed",
+        "I've felt valuable to others"
+      ]
+    },
+    {
+      "id": "w3",
+      "is_reverse": true,
+      "variations": [
+        "I\u2019ve been feeling relaxed",
+        "I've felt calm lately",
+        "Relaxation has been a common state for me",
+        "Lately, I've been experiencing a sense of tranquility",
+        "I've been feeling at ease"
+      ]
+    },
+    {
+      "id": "w4",
+      "is_reverse": true,
+      "variations": [
+        "I\u2019ve been feeling interested in other people",
+        "I've had a strong curiosity about others lately",
+        "Other people have been holding my attention",
+        "I've found myself wanting to learn more about those around me",
+        "I've been taking an interest in the lives of others"
+      ]
+    },
+    {
+      "id": "w5",
+      "is_reverse": true,
+      "variations": [
+        "I\u2019ve had energy to spare",
+        "I've felt particularly energetic lately",
+        "I've had plenty of energy",
+        "Energy has not been a problem for me",
+        "I've had more than enough energy to get things done"
+      ]
+    },
+    {
+      "id": "w6",
+      "is_reverse": true,
+      "variations": [
+        "I\u2019ve been dealing with problems well",
+        "I've been able to handle difficulties effectively",
+        "Problems haven't been getting the best of me",
+        "I've been coping with challenges successfully",
+        "I've been managing to overcome obstacles"
+      ]
+    },
+    {
+      "id": "w7",
+      "is_reverse": true,
+      "variations": [
+        "I\u2019ve been thinking clearly",
+        "My thoughts have been organized",
+        "I've had a clear mind lately",
+        "I've been able to think logically",
+        "My mental clarity has been good"
+      ]
+    },
+    {
+      "id": "w8",
+      "is_reverse": true,
+      "variations": [
+        "I\u2019ve been feeling good about myself",
+        "I have a positive self-image",
+        "My self-esteem has been high lately",
+        "I've had a favorable opinion of myself",
+        "Lately, I've felt confident in my own worth"
+      ]
+    },
+    {
+      "id": "w9",
+      "is_reverse": true,
+      "variations": [
+        "I\u2019ve been feeling confident",
+        "I've felt self-assured lately",
+        "My confidence has been high",
+        "I've been feeling assured of myself",
+        "I've had a strong sense of faith in my abilities"
+      ]
+    },
+    {
+      "id": "w10",
+      "is_reverse": true,
+      "variations": [
+        "I\u2019ve been able to make up my own mind about things",
+        "I can think for myself",
+        "I've been able to form my own opinions",
+        "Making my own decisions comes naturally to me",
+        "I'm confident in my ability to decide what I believe"
+      ]
+    },
+    {
+      "id": "w11",
+      "is_reverse": true,
+      "variations": [
+        "I\u2019ve been feeling cheerful",
+        "I've been in a good mood lately",
+        "I often feel happy",
+        "Cheerfulness has been my usual state",
+        "Lately, I've had a positive outlook"
+      ]
+    }
+  ],
+  "distress": [
+    {
+      "id": "d1",
+      "is_reverse": false,
+      "variations": [
+        "I experience nervousness or shakiness inside",
+        "I often feel anxious or jittery",
+        "I have an inner feeling of unease or trembling",
+        "Nervous sensations or inner quivering are common for me",
+        "I frequently feel a sense of internal agitation or shakiness"
+      ]
+    },
+    {
+      "id": "d2",
+      "is_reverse": false,
+      "variations": [
+        "I feel suddenly scared for no reason",
+        "I experience unexpected fear without a clear cause",
+        "Without warning, I am overcome with fear for no apparent reason",
+        "For no reason at all, I am suddenly overcome with a sense of fear",
+        "I have episodes of unexplained and sudden fear"
+      ]
+    },
+    {
+      "id": "d3",
+      "is_reverse": false,
+      "variations": [
+        "I feel fearful",
+        "I am filled with anxiety",
+        "Fear is overwhelming me",
+        "I have a sense of dread",
+        "Anxiety is taking hold of me"
+      ]
+    },
+    {
+      "id": "d4",
+      "is_reverse": false,
+      "variations": [
+        "I experience spells of terror or panic",
+        "I have episodes of intense fear or anxiety",
+        "Panic attacks are something I experience",
+        "I am plagued by sudden feelings of extreme terror",
+        "At times, I am overcome with overwhelming panic"
+      ]
+    },
+    {
+      "id": "d5",
+      "is_reverse": false,
+      "variations": [
+        "I feel so restless I can't sit still",
+        "I have an overwhelming urge to get up and move around",
+        "Being still makes me feel extremely anxious",
+        "I'm constantly fidgeting because I'm so on edge",
+        "I feel a strong need to pace back and forth when I'm feeling down"
+      ]
+    },
+    {
+      "id": "d6",
+      "is_reverse": false,
+      "variations": [
+        "I worry more than I would like.",
+        "I have more worries than I wish I did",
+        "Worrying is something I do more often than I prefer",
+        "I experience excessive concern",
+        "My worries are more frequent than I would ideally like them to be"
+      ]
+    },
+    {
+      "id": "d7",
+      "is_reverse": false,
+      "variations": [
+        "I have difficulty concentrating.",
+        "I have trouble focusing my attention",
+        "Concentrating is a challenge for me",
+        "My mind often wanders and I struggle to stay focused",
+        "I find it hard to pay attention and stay on task"
+      ]
+    },
+    {
+      "id": "d8",
+      "is_reverse": false,
+      "variations": [
+        "I become irritated easily.",
+        "I get annoyed quickly",
+        "Small things tend to upset me",
+        "I have a short fuse",
+        "I find myself getting frustrated easily"
+      ]
+    },
+    {
+      "id": "d9",
+      "is_reverse": false,
+      "variations": [
+        "My thoughts sometimes feel difficult to control.",
+        "I have trouble keeping my thoughts in check at times",
+        "My mind can be hard to rein in occasionally",
+        "Sometimes I struggle to manage my thoughts",
+        "It can be a challenge for me to regulate my thinking"
+      ]
+    },
+    {
+      "id": "d10",
+      "is_reverse": false,
+      "variations": [
+        "I feel mentally exhausted.",
+        "I am feeling emotionally drained",
+        "My mental energy is depleted",
+        "I feel completely burned out",
+        "I am exhausted mentally"
+      ]
+    }
+  ],
+  "recovery": [
+    {
+      "id": "r1",
+      "is_reverse": true,
+      "variations": [
+        "I wake up feeling refreshed.",
+        "I feel revitalized when I wake up in the morning",
+        "Upon waking, I feel well-rested",
+        "Morning wake-up leaves me feeling energized",
+        "I start the day feeling refreshed and rejuvenated"
+      ]
+    },
+    {
+      "id": "r2",
+      "is_reverse": true,
+      "variations": [
+        "I get enough sleep most nights.",
+        "Most nights, I get a sufficient amount of rest",
+        "I usually have adequate sleep each night",
+        "Sleeping enough is something I experience most nights",
+        "Typically, I obtain enough restful sleep at night"
+      ]
+    },
+    {
+      "id": "r3",
+      "is_reverse": true,
+      "variations": [
+        "I feel physically rested.",
+        "My body feels refreshed",
+        "I am well-rested physically",
+        "Physical fatigue is not a problem for me right now",
+        "I feel rejuvenated in terms of my physical energy"
+      ]
+    },
+    {
+      "id": "r4",
+      "is_reverse": false,
+      "variations": [
+        "I struggle to fall asleep.",
+        "I have trouble drifting off to sleep",
+        "Falling asleep is difficult for me",
+        "I often find it hard to get to sleep",
+        "It takes me a long time to fall asleep at night"
+      ]
+    },
+    {
+      "id": "r5",
+      "is_reverse": false,
+      "variations": [
+        "I wake up frequently during the night.",
+        "I have trouble sleeping through the night",
+        "My sleep is often disrupted by frequent wakings",
+        "I find myself waking up multiple times during the night",
+        "My nighttime sleep is frequently interrupted by awakenings"
+      ]
+    },
+    {
+      "id": "r6",
+      "is_reverse": false,
+      "variations": [
+        "Fatigue affects my daily performance.",
+        "I feel exhausted, which impacts my daily activities",
+        "My energy levels limit what I can accomplish each day",
+        "Daily tasks are more difficult for me due to lack of energy",
+        "Tiredness interferes with my ability to perform daily tasks"
+      ]
+    }
+  ],
+  "work_life": [
+    {
+      "id": "wl1",
+      "is_reverse": true,
+      "variations": [
+        "My current working hours / patterns suit my personal circumstances",
+        "I find my work schedule is compatible with my personal life",
+        "My personal circumstances are well accommodated by my current work arrangements",
+        "The hours I work fit in with my personal situation",
+        "My work patterns align with my individual circumstances"
+      ]
+    },
+    {
+      "id": "wl2",
+      "is_reverse": true,
+      "variations": [
+        "My employer provides adequate flexibility for me to fit work in around my family life",
+        "I am able to balance my job and family responsibilities due to my employer's flexible scheduling",
+        "My work schedule is accommodating of my family commitments",
+        "My employer offers sufficient flexibility to allow me to manage both work and family obligations",
+        "I have enough flexibility at work to meet the needs of my family life"
+      ]
+    },
+    {
+      "id": "wl3",
+      "is_reverse": true,
+      "variations": [
+        "I have enough time for personal activities.",
+        "I can pursue my hobbies without feeling rushed",
+        "Personal activities do not get neglected due to lack of time",
+        "My schedule allows for adequate leisure time",
+        "I am able to balance work and personal life in terms of time allocation"
+      ]
+    },
+    {
+      "id": "wl4",
+      "is_reverse": true,
+      "variations": [
+        "My work allows me to maintain a healthy lifestyle.",
+        "I can balance my job and personal well-being effectively",
+        "My job supports my overall health and wellness",
+        "I am able to prioritize self-care due to my work schedule",
+        "My work-life balance allows me to stay physically and mentally healthy"
+      ]
+    },
+    {
+      "id": "wl5",
+      "is_reverse": true,
+      "variations": [
+        "I can disconnect from work during personal time.",
+        "I am able to leave work-related thoughts behind when I'm not on the job",
+        "Personal time is free from work-related responsibilities for me",
+        "I can separate my work life from my personal life",
+        "I find it easy to switch off from work when I'm outside of work hours"
+      ]
+    },
+    {
+      "id": "wl6",
+      "is_reverse": false,
+      "variations": [
+        "Work often interferes with my personal life.",
+        "My job frequently encroaches on my personal time",
+        "I often find that work gets in the way of my personal life",
+        "Personal activities are frequently disrupted by work demands",
+        "Work responsibilities tend to spill over into my non-work hours"
+      ]
+    },
+    {
+      "id": "wl7",
+      "is_reverse": true,
+      "variations": [
+        "I have adequate time to recover between workdays.",
+        "I get enough rest between workdays to feel refreshed",
+        "My work schedule allows for sufficient downtime to recharge",
+        "I have enough time off between workdays to fully recover",
+        "My workdays are spaced out enough for me to adequately recuperate"
+      ]
+    }
+  ]
+}

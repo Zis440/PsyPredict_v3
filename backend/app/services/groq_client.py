@@ -111,6 +111,7 @@ class GroqClient(BaseLLMClient):
         history: Optional[List[ConversationMessage]] = None,
         text_emotion_summary: Optional[str] = None,
         patient_profile: Optional[str] = None,
+        semantic_memories: Optional[str] = None,
         gita_context: Optional[str] = None,
     ) -> tuple[str, PsychReport]:
         if not self._settings.GROQ_API_KEY:
@@ -125,6 +126,7 @@ class GroqClient(BaseLLMClient):
             max_turns=self._settings.MAX_CONTEXT_TURNS,
             text_emotion_summary=text_emotion_summary,
             patient_profile=patient_profile,
+            semantic_memories=semantic_memories,
             gita_context=gita_context,
         )
 
@@ -178,6 +180,7 @@ class GroqClient(BaseLLMClient):
         history: Optional[List[ConversationMessage]] = None,
         text_emotion_summary: Optional[str] = None,
         patient_profile: Optional[str] = None,
+        semantic_memories: Optional[str] = None,
         gita_context: Optional[str] = None,
     ) -> AsyncIterator[str]:
         if not self._settings.GROQ_API_KEY:
@@ -193,6 +196,7 @@ class GroqClient(BaseLLMClient):
             max_turns=self._settings.MAX_CONTEXT_TURNS,
             text_emotion_summary=text_emotion_summary,
             patient_profile=patient_profile,
+            semantic_memories=semantic_memories,
             gita_context=gita_context,
         )
 

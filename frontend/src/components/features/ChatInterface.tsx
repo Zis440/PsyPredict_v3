@@ -9,6 +9,10 @@ import type { Id } from "../../../convex/_generated/dataModel";
 import { generateChatPDF } from "../../utils/pdfUtils";
 import { useNavigate } from "react-router-dom";
 import { useGuestMode } from "../../context/GuestModeContext";
+import { useSegment } from "../../context/SegmentContext";
+import { generateMasterReport, getSjtScenario, getWritingScenario } from "../../services/api";
+import type { MasterReport } from "../../services/api";
+import { MasterReportModal } from "./MasterReportModal";
 import {
   Tooltip,
   TooltipTrigger,
@@ -203,6 +207,7 @@ const ChatInterface: React.FC<ChatProps> = ({ currentEmotion, sessionId }) => {
     updateGuestConversation,
     getGuestConversation,
   } = useGuestMode();
+  const { segment } = useSegment();
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [conversationId, setConversationId] = useState<string | null>(sessionId || null);
@@ -212,6 +217,10 @@ const ChatInterface: React.FC<ChatProps> = ({ currentEmotion, sessionId }) => {
   const [feedbackState, setFeedbackState] = useState<Record<number, 'up' | 'down'>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const [masterReport, setMasterReport] = useState<MasterReport | null>(null);
 
   const createConversation = useMutation(api.conversations.create);
   const createMessage = useMutation(api.messages.create);
@@ -468,9 +477,39 @@ const ChatInterface: React.FC<ChatProps> = ({ currentEmotion, sessionId }) => {
     }
   };
 
+  const handleGenerateReport = async () => {
+    if (!user) return;
+    setIsReportModalOpen(true);
+    setIsGeneratingReport(true);
+    try {
+      const report = await generateMasterReport(user.id, segment || 'professional');
+      setMasterReport(report);
+    } catch (e) {
+      console.error("Failed to generate master report", e);
+    } finally {
+      setIsGeneratingReport(false);
+    }
+  };
+
+  const handleStartSJT = async () => {
+    const sjt = await getSjtScenario(segment || 'professional');
+    setMessages(prev => [...prev, { role: "assistant", content: `**Situational Test: ${sjt.title}**\n\n${sjt.description}\n\n${sjt.questions.join("\n")}` }]);
+  };
+
+  const handleStartWriting = async () => {
+    const wt = await getWritingScenario(segment || 'professional');
+    setMessages(prev => [...prev, { role: "assistant", content: `**Therapeutic Writing: ${wt.title}**\n\n${wt.description}\n\n${wt.questions.join("\n")}` }]);
+  };
+
   return (
     <TooltipProvider>
       <div className="flex flex-col h-full bg-white overflow-hidden min-w-0 relative">
+        <MasterReportModal 
+          isOpen={isReportModalOpen} 
+          onClose={() => setIsReportModalOpen(false)} 
+          isGenerating={isGeneratingReport} 
+          report={masterReport} 
+        />
 
         {/* ── PDF Button ── */}
         <div className="absolute top-4 right-6 z-10">
@@ -498,8 +537,20 @@ const ChatInterface: React.FC<ChatProps> = ({ currentEmotion, sessionId }) => {
           )}
         </div>
 
+        {/* ── Intelligence Action Bar ── */}
+        <div className="bg-indigo-50/50 border-b border-indigo-100 p-3 flex flex-wrap items-center gap-2 px-5">
+          {!isGuestMode && (
+            <button 
+              onClick={handleGenerateReport}
+              className="flex items-center gap-2 bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm hover:bg-indigo-700 transition-colors"
+            >
+              <Zap size={14} /> Generate Master Report
+            </button>
+          )}
+        </div>
+
         {/* ── Messages ── */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden p-5 pt-12 space-y-3 bg-gray-50 min-w-0">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden p-5 space-y-3 bg-gray-50 min-w-0">
           {[WELCOME_MESSAGE, ...messages].map((msg, index) => (
             <div
               key={index}
@@ -572,15 +623,6 @@ const ChatInterface: React.FC<ChatProps> = ({ currentEmotion, sessionId }) => {
                     </div>
                   )}
                 </div>
-
-                {/* Combined assessment + remedy panel */}
-                {msg.role === "assistant" && msg.report && (
-                  <AssessmentPanel
-                    report={msg.report}
-                    fusionScore={msg.fusionScore}
-                    remedy={msg.remedy}
-                  />
-                )}
               </div>
 
               {/* User avatar — top aligned */}

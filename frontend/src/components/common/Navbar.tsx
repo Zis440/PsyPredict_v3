@@ -16,6 +16,7 @@ const Navbar: React.FC = () => {
 
   const navLinks = [
     { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    // { path: '/assessments', label: 'Assessments', icon: LayoutDashboard }, // Added Assessments link
     { path: '/progress',  label: 'Progress',  icon: BarChart3 },
     { path: '/history',   label: 'History',   icon: History },
     { path: '/settings',  label: 'Settings',  icon: Settings },

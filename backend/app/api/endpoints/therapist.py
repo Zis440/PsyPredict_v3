@@ -148,6 +148,7 @@ async def chat(req: ChatRequest):  # type: ignore[misc]
     patient_preferences = None
     session_context = None
     avg_feedback = None
+    semantic_memories = None
 
     if user_id:
         try:
@@ -168,6 +169,15 @@ async def chat(req: ChatRequest):  # type: ignore[misc]
                         "session_number": progress.get("total_sessions", 0) + 1,
                         "risk_trend": progress.get("summary", "unknown"),
                     }
+                
+                # Fetch semantic memories
+                if hasattr(mem, "query_semantic_memories"):
+                    memories = mem.query_semantic_memories(user_id, user_text, n_results=3)
+                    if memories:
+                        semantic_memories = "\n- ".join([m["text"] for m in memories])
+                        if semantic_memories:
+                            semantic_memories = "- " + semantic_memories
+                            logger.info("Semantic memories retrieved for user %s", user_id)
         except Exception as e:
             logger.warning("Patient memory retrieval failed: %s", e)
 
@@ -235,6 +245,7 @@ async def chat(req: ChatRequest):  # type: ignore[misc]
                     history=history,
                     text_emotion_summary=text_emotion_summary,
                     patient_profile=patient_profile,
+                    semantic_memories=semantic_memories,
                     gita_context=gita_context,
                 ):
                     yield token
@@ -246,6 +257,7 @@ async def chat(req: ChatRequest):  # type: ignore[misc]
                     history=history,
                     text_emotion_summary=text_emotion_summary,
                     patient_profile=patient_profile,
+                    semantic_memories=semantic_memories,
                     gita_context=gita_context,
                 ):
                     yield token
@@ -268,6 +280,7 @@ async def chat(req: ChatRequest):  # type: ignore[misc]
             history=history,
             text_emotion_summary=text_emotion_summary,
             patient_profile=patient_profile,
+            semantic_memories=semantic_memories,
             gita_context=gita_context,
             task_type=TaskType.ROUTINE_CHAT,
         )
@@ -288,6 +301,7 @@ async def chat(req: ChatRequest):  # type: ignore[misc]
             history=history,
             text_emotion_summary=text_emotion_summary,
             patient_profile=patient_profile,
+            semantic_memories=semantic_memories,
             gita_context=gita_context,
         )
 
@@ -323,6 +337,20 @@ async def chat(req: ChatRequest):  # type: ignore[misc]
                 )
             except Exception as e:
                 logger.debug("Background summarization task creation failed: %s", e)
+
+        # Fire-and-forget reflection engine
+        try:
+            from app.services.reflection_engine import run_reflection
+            asyncio.create_task(
+                run_reflection(
+                    user_id=user_id,
+                    user_message=user_text[:500],
+                    risk_level=report.risk_classification.value,
+                    emotion=dominant_text_emotion
+                )
+            )
+        except Exception as e:
+            logger.debug("Background reflection task creation failed: %s", e)
 
     return ChatResponse(
         response=reply,

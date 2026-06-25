@@ -131,6 +131,7 @@ def build_messages(
     max_turns: int,
     text_emotion_summary: Optional[str] = None,
     patient_profile: Optional[str] = None,
+    semantic_memories: Optional[str] = None,
     gita_context: Optional[str] = None,
 ) -> list:
     """
@@ -149,6 +150,12 @@ def build_messages(
         system_content += (
             f"\n\nPATIENT HISTORY (Adaptive Context — use this to personalize your response):\n"
             f"{patient_profile}"
+        )
+
+    if semantic_memories:
+        system_content += (
+            f"\n\nEPISODIC & SEMANTIC MEMORIES (Relevant facts about this patient):\n"
+            f"{semantic_memories}"
         )
 
     if gita_context:
@@ -305,6 +312,7 @@ def build_adaptive_system_prompt(
     session_context: Optional[dict] = None,
     gita_candidates: Optional[str] = None,
     patient_profile: Optional[str] = None,
+    semantic_memories: Optional[str] = None,
     avg_feedback: Optional[float] = None,
 ) -> str:
     """
@@ -396,6 +404,13 @@ def build_adaptive_system_prompt(
             f"{patient_profile}"
         )
 
+    # --- Semantic Memories ---
+    if semantic_memories:
+        prompt_parts.append(
+            f"\n\nEPISODIC & SEMANTIC MEMORIES (Relevant facts about this patient):\n"
+            f"{semantic_memories}"
+        )
+
     # --- Gita Context ---
     if gita_candidates:
         prompt_parts.append(
@@ -413,6 +428,7 @@ def build_adaptive_messages(
     max_turns: int,
     text_emotion_summary: Optional[str] = None,
     patient_profile: Optional[str] = None,
+    semantic_memories: Optional[str] = None,
     gita_context: Optional[str] = None,
     patient_preferences: Optional[dict] = None,
     session_context: Optional[dict] = None,
@@ -430,6 +446,7 @@ def build_adaptive_messages(
         session_context=session_context,
         gita_candidates=gita_context,
         patient_profile=patient_profile,
+        semantic_memories=semantic_memories,
         avg_feedback=avg_feedback,
     )
 

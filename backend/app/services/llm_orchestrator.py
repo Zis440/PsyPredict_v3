@@ -244,6 +244,7 @@ class LLMOrchestrator:
         history: Optional[List[ConversationMessage]] = None,
         text_emotion_summary: Optional[str] = None,
         patient_profile: Optional[str] = None,
+        semantic_memories: Optional[str] = None,
         gita_context: Optional[str] = None,
         task_type: TaskType = TaskType.ROUTINE_CHAT,
         force_provider: Optional[ProviderPreference] = None,
@@ -295,6 +296,7 @@ class LLMOrchestrator:
                 history=history,
                 text_emotion_summary=text_emotion_summary,
                 patient_profile=patient_profile,
+                semantic_memories=semantic_memories,
                 gita_context=gita_context,
             )
             elapsed = (time.monotonic() - start_time) * 1000
@@ -357,6 +359,7 @@ class LLMOrchestrator:
                     history=history,
                     text_emotion_summary=text_emotion_summary,
                     patient_profile=patient_profile,
+                    semantic_memories=semantic_memories,
                     gita_context=gita_context,
                 )
                 elapsed = (time.monotonic() - start_time) * 1000
@@ -409,6 +412,7 @@ class LLMOrchestrator:
         history: Optional[List[ConversationMessage]] = None,
         text_emotion_summary: Optional[str] = None,
         patient_profile: Optional[str] = None,
+        semantic_memories: Optional[str] = None,
         gita_context: Optional[str] = None,
         task_type: TaskType = TaskType.ROUTINE_CHAT,
         force_provider: Optional[ProviderPreference] = None,
@@ -452,6 +456,7 @@ class LLMOrchestrator:
                 history=history,
                 text_emotion_summary=text_emotion_summary,
                 patient_profile=patient_profile,
+                semantic_memories=semantic_memories,
                 gita_context=gita_context,
             ):
                 yield token
@@ -485,6 +490,7 @@ class LLMOrchestrator:
                     history=history,
                     text_emotion_summary=text_emotion_summary,
                     patient_profile=patient_profile,
+                    semantic_memories=semantic_memories,
                     gita_context=gita_context,
                 ):
                     yield token

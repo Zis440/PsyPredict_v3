@@ -85,10 +85,59 @@ CREATE TABLE IF NOT EXISTS session_feedback (
     created_at TEXT
 );
 
+CREATE TABLE IF NOT EXISTS user_mind_model (
+    user_id TEXT PRIMARY KEY,
+    personality_traits TEXT,
+    stressors TEXT,
+    motivators TEXT,
+    relationship_concerns TEXT,
+    coping_mechanisms TEXT,
+    trust_score REAL DEFAULT 0.5,
+    last_updated TEXT,
+    -- 15 Executive Scores
+    personality_health REAL DEFAULT 50.0,
+    mental_wellness REAL DEFAULT 50.0,
+    emotional_intelligence REAL DEFAULT 50.0,
+    communication REAL DEFAULT 50.0,
+    behavioral_stability REAL DEFAULT 50.0,
+    stress REAL DEFAULT 50.0,
+    anxiety REAL DEFAULT 50.0,
+    resilience REAL DEFAULT 50.0,
+    leadership REAL DEFAULT 50.0,
+    growth_potential REAL DEFAULT 50.0,
+    career_readiness REAL DEFAULT 50.0,
+    team_compatibility REAL DEFAULT 50.0,
+    skill_proficiency REAL DEFAULT 50.0,
+    role_fitment REAL DEFAULT 50.0,
+    overall_intelligence_index REAL DEFAULT 50.0
+);
+
+CREATE TABLE IF NOT EXISTS episodic_timeline (
+    event_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT NOT NULL,
+    timestamp TEXT NOT NULL,
+    event_summary TEXT,
+    emotional_shift TEXT,
+    unresolved_topics TEXT
+);
+
+CREATE TABLE IF NOT EXISTS assessment_results (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT NOT NULL,
+    scenario_id TEXT NOT NULL,
+    type TEXT NOT NULL,
+    user_response TEXT,
+    analysis TEXT,
+    scores TEXT,  -- JSON string
+    timestamp TEXT NOT NULL
+);
+
 CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_sessions_created ON sessions(created_at);
 CREATE INDEX IF NOT EXISTS idx_progress_user ON progress_snapshots(user_id);
 CREATE INDEX IF NOT EXISTS idx_feedback_user ON session_feedback(user_id);
+CREATE INDEX IF NOT EXISTS idx_episodic_user ON episodic_timeline(user_id);
+CREATE INDEX IF NOT EXISTS idx_assessment_user ON assessment_results(user_id);
 """
 
 
@@ -108,9 +157,13 @@ class PatientMemoryEngine:
                 data_dir = os.path.join(base, "..", "data")
                 os.makedirs(data_dir, exist_ok=True)
                 sqlite_path = os.path.join(data_dir, "patient_memory.db")
+                self._chroma_path = os.path.join(data_dir, "chroma_db")
+            else:
+                self._chroma_path = os.path.join(os.path.dirname(sqlite_path), "chroma_db")
 
             self._db_path = sqlite_path
             self._init_sqlite()
+            self._init_chroma()
             logger.info("[OK] PatientMemory initialized (SQLite: %s)", sqlite_path)
         elif backend == "supabase":
             try:
@@ -140,7 +193,71 @@ class PatientMemoryEngine:
             data_dir = os.path.join(base, "..", "data")
             os.makedirs(data_dir, exist_ok=True)
             self._db_path = os.path.join(data_dir, "patient_memory.db")
+            self._chroma_path = os.path.join(data_dir, "chroma_db")
             self._init_sqlite()
+            self._init_chroma()
+
+    # --- ChromaDB (Semantic Memory) --------------------------------------------
+
+    def _init_chroma(self):
+        try:
+            import chromadb
+            self.chroma_client = chromadb.PersistentClient(path=self._chroma_path)
+            self.semantic_collection = self.chroma_client.get_or_create_collection(name="semantic_memories")
+            from sentence_transformers import SentenceTransformer
+            self.embedder = SentenceTransformer('all-MiniLM-L6-v2')
+            logger.info("[OK] ChromaDB initialized at %s", self._chroma_path)
+        except ImportError:
+            logger.warning("chromadb or sentence_transformers not installed. Semantic memory disabled.")
+            self.chroma_client = None
+            self.embedder = None
+        except Exception as exc:
+            logger.error("Failed to initialize ChromaDB: %s", exc)
+            self.chroma_client = None
+            self.embedder = None
+
+    def add_semantic_memory(self, user_id: str, memory_text: str, category: str = "general", confidence: float = 1.0):
+        if not hasattr(self, "chroma_client") or not self.chroma_client or not self.embedder:
+            return False
+        try:
+            embedding = self.embedder.encode(memory_text).tolist()
+            # Simple hash logic to create unique ID for the memory
+            import hashlib
+            m_hash = hashlib.md5(memory_text.encode('utf-8')).hexdigest()
+            memory_id = f"{user_id}_{m_hash}"
+            self.semantic_collection.upsert(
+                ids=[memory_id],
+                embeddings=[embedding],
+                documents=[memory_text],
+                metadatas=[{"user_id": user_id, "category": category, "confidence": confidence, "timestamp": datetime.now(timezone.utc).isoformat()}]
+            )
+            return True
+        except Exception as exc:
+            logger.error("Failed to add semantic memory: %s", exc)
+            return False
+
+    def query_semantic_memories(self, user_id: str, query_text: str, n_results: int = 5) -> List[Dict[str, Any]]:
+        if not hasattr(self, "chroma_client") or not self.chroma_client or not self.embedder:
+            return []
+        try:
+            query_embedding = self.embedder.encode(query_text).tolist()
+            results = self.semantic_collection.query(
+                query_embeddings=[query_embedding],
+                n_results=n_results,
+                where={"user_id": user_id}
+            )
+            memories = []
+            if results and "documents" in results and results["documents"]:
+                for i in range(len(results["documents"][0])):
+                    memories.append({
+                        "id": results["ids"][0][i],
+                        "text": results["documents"][0][i],
+                        "metadata": results["metadatas"][0][i]
+                    })
+            return memories
+        except Exception as exc:
+            logger.error("Failed to query semantic memories: %s", exc)
+            return []
 
     # --- SQLite ----------------------------------------------------------------
 
@@ -749,6 +866,49 @@ class PatientMemoryEngine:
             },
             "avg_feedback_rating": avg_feedback,
         }
+
+    def save_assessment_results(self, user_id: str, package_type: str, raw_answers: List[Dict[str, Any]]) -> bool:
+        """Save raw assessment answers to the database for later reporting."""
+        if not user_id or self.backend != "sqlite":
+            return False
+        conn = self._get_conn()
+        try:
+            now = datetime.now(timezone.utc).isoformat()
+            # We'll store the whole package as a single row in assessment_results
+            conn.execute(
+                """INSERT INTO assessment_results
+                   (user_id, scenario_id, type, user_response, analysis, scores, timestamp)
+                   VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                (user_id, "full_package", package_type, json.dumps(raw_answers), "", "", now),
+            )
+            conn.commit()
+            return True
+        except Exception as exc:
+            logger.error("Failed to save assessment results: %s", exc)
+            return False
+        finally:
+            conn.close()
+
+    def get_latest_assessment_results(self, user_id: str) -> List[Dict[str, Any]]:
+        """Get the most recent raw assessment answers for the user."""
+        if not user_id or self.backend != "sqlite":
+            return []
+        conn = self._get_conn()
+        try:
+            row = conn.execute(
+                """SELECT user_response FROM assessment_results 
+                   WHERE user_id = ? AND scenario_id = 'full_package' 
+                   ORDER BY timestamp DESC LIMIT 1""",
+                (user_id,)
+            ).fetchone()
+            if row and row["user_response"]:
+                return json.loads(row["user_response"])
+            return []
+        except Exception as exc:
+            logger.error("Failed to get latest assessment results: %s", exc)
+            return []
+        finally:
+            conn.close()
 
 
 # ---------------------------------------------------------------------------

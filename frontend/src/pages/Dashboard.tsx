@@ -1,4 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useSegment } from "../context/SegmentContext";
 import WebcamFeed from "../components/features/WebcamFeed";
 import ChatInterface from "../components/features/ChatInterface";
 import RemedyCard from "../components/features/RemedyCard";
@@ -7,6 +9,16 @@ import Navbar from "../components/common/Navbar";
 
 const Dashboard: React.FC = () => {
   const [currentEmotion, setCurrentEmotion] = useState<string>("neutral");
+  const { isSegmentSelected } = useSegment();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!isSegmentSelected) {
+      navigate('/select-segment');
+    }
+  }, [isSegmentSelected, navigate]);
+
+  if (!isSegmentSelected) return null;
 
   return (
     // CHANGED: Use h-[100dvh] for better mobile browser support and strict height constraints

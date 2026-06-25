@@ -29,6 +29,7 @@ class BaseLLMClient(ABC):
         history: Optional[List[ConversationMessage]] = None,
         text_emotion_summary: Optional[str] = None,
         patient_profile: Optional[str] = None,
+        semantic_memories: Optional[str] = None,
         gita_context: Optional[str] = None,
     ) -> tuple[str, PsychReport]:
         """
@@ -48,6 +49,7 @@ class BaseLLMClient(ABC):
         history: Optional[List[ConversationMessage]] = None,
         text_emotion_summary: Optional[str] = None,
         patient_profile: Optional[str] = None,
+        semantic_memories: Optional[str] = None,
         gita_context: Optional[str] = None,
     ) -> AsyncIterator[str]:
         """
