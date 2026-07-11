@@ -200,6 +200,13 @@ def create_app() -> FastAPI:
     app.include_router(assessment_router, prefix="/api/assessments", tags=["Assessments"])
     app.include_router(reports_router, prefix="/api/reports", tags=["Master Reports"])
 
+    # ── Keep-Alive ping (no model deps) ──────────────────────────────────────
+    import time as _time
+
+    @app.get("/ping", tags=["Health"])
+    async def ping():
+        return {"status": "alive", "timestamp": _time.time()}
+
     return app
 
 
