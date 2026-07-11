@@ -434,7 +434,7 @@ const ChatInterface: React.FC<ChatProps> = ({ currentEmotion, sessionId }) => {
                   {msg.role === "assistant" && (
                     <div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-100">
                       <div className="flex items-center gap-2">
-                        {msg.routing ? (
+                        {msg.routing?.provider_used ? (
                           <span className={`flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded border ${msg.routing.provider_used === 'ollama'
                             ? 'bg-blue-50 text-blue-600 border-blue-100'
                             : msg.routing.provider_used === 'groq'

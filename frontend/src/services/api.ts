@@ -264,7 +264,10 @@ export async function* streamChatMessage(
 
   if (response.headers.get("content-type")?.includes("application/json")) {
     const data = await response.json();
-    const formattedResponse = `${data.response}\n---JSON---\n${JSON.stringify(data.report || {})}\n---ROUTING---\n${JSON.stringify(data.routing || {})}`;
+    let formattedResponse = `${data.response}\n---JSON---\n${JSON.stringify(data.report || {})}`;
+    if (data.routing) {
+      formattedResponse += `\n---ROUTING---\n${JSON.stringify(data.routing)}`;
+    }
     yield formattedResponse;
     return;
   }
