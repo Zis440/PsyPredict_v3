@@ -188,6 +188,9 @@ export interface MasterReport {
   action_plan: string;
   future_growth_predictions: string;
   bhagavad_gita_wisdom: string;
+  relationship_health_analysis?: string;
+  life_purpose_analysis?: string;
+  cognitive_patterns_analysis?: string;
 }
 
 // --- API Functions ---

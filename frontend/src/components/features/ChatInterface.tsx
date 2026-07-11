@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
-import { sendChatMessage, streamChatMessage, getGitaAdvice, submitSessionFeedback } from "../../services/api";
-import type { PsychReport, CrisisResource, RemedyData, RoutingMetadata } from "../../services/api";
-import { Bot, User, FileText, ChevronDown, ChevronUp, AlertTriangle, Phone, Lock, ThumbsUp, ThumbsDown, Zap, Cloud } from "lucide-react";
+import { getGitaAdvice, sendChatMessage, streamChatMessage, submitSessionFeedback } from "../../services/api";
+import type { PsychReport, RemedyData, RoutingMetadata } from "../../services/api";
+import { Bot, User, FileText, Lock, ThumbsUp, ThumbsDown, Zap, Cloud } from "lucide-react";
 import { useUser } from '@clerk/react';
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
@@ -10,7 +10,7 @@ import { generateChatPDF } from "../../utils/pdfUtils";
 import { useNavigate } from "react-router-dom";
 import { useGuestMode } from "../../context/GuestModeContext";
 import { useSegment } from "../../context/SegmentContext";
-import { generateMasterReport, getSjtScenario, getWritingScenario } from "../../services/api";
+import { generateMasterReport } from "../../services/api";
 import type { MasterReport } from "../../services/api";
 import { MasterReportModal } from "./MasterReportModal";
 import {
@@ -39,22 +39,13 @@ const WELCOME_MESSAGE: Message = {
   content: "Hello. I am here to listen. How are you feeling right now?",
 };
 
-// ── Risk Level Display Config ──────────────────────────────────────────────
-const RISK_CONFIG: Record<string, { color: string; bg: string; label: string }> = {
-  MINIMAL:  { color: "text-green-700",  bg: "bg-green-100",  label: "Minimal Risk"  },
-  LOW:      { color: "text-blue-700",   bg: "bg-blue-100",   label: "Low Risk"      },
-  MODERATE: { color: "text-yellow-700", bg: "bg-yellow-100", label: "Moderate Risk" },
-  HIGH:     { color: "text-orange-700", bg: "bg-orange-100", label: "High Risk"     },
-  CRITICAL: { color: "text-red-700",    bg: "bg-red-100",    label: "Critical Risk" },
-};
-
 // ── Risk → Condition mapping (mirrors backend therapist.py) ───────────────
 const RISK_TO_CONDITION: Record<string, string> = {
   CRITICAL: "Suicidal Ideation",
-  HIGH:     "Depression",
+  HIGH: "Depression",
   MODERATE: "Anxiety",
-  LOW:      "Anxiety",
-  MINIMAL:  "Anxiety",
+  LOW: "Anxiety",
+  MINIMAL: "Anxiety",
 };
 
 // ── Fetch remedy after streaming ──────────────────────────────────────────
@@ -67,134 +58,6 @@ const fetchRemedyForReport = async (report: PsychReport): Promise<RemedyData | u
     console.warn("Remedy fetch failed:", e);
     return undefined;
   }
-};
-
-// ── Crisis Banner ─────────────────────────────────────────────────────────
-const CrisisBanner: React.FC<{ resources: CrisisResource[] }> = ({ resources }) => (
-  <div className="mt-2 bg-red-50 border border-red-300 rounded-xl p-3">
-    <div className="flex items-center gap-2 text-red-700 font-semibold text-sm mb-2">
-      <AlertTriangle size={14} />
-      Immediate Crisis Support Resources
-    </div>
-    <div className="space-y-1">
-      {resources.map((r, i) => (
-        <div key={i} className="flex items-center gap-2 text-xs text-red-800">
-          <Phone size={11} />
-          <span className="font-medium">{r.name}:</span>
-          <span>{r.contact}</span>
-          <span className="text-red-500">({r.available})</span>
-        </div>
-      ))}
-    </div>
-  </div>
-);
-
-// ── Combined Clinical + Remedy Panel ──────────────────────────────────────
-const AssessmentPanel: React.FC<{ report: PsychReport; fusionScore?: number; remedy?: RemedyData }> = ({
-  report,
-  fusionScore,
-  remedy,
-}) => {
-  const [expanded, setExpanded] = useState(false);
-  const risk = RISK_CONFIG[report.risk_classification] ?? RISK_CONFIG.MINIMAL;
-
-  return (
-    <div className="mt-2 border border-gray-200 rounded-xl overflow-hidden text-xs">
-
-      {/* ── Header / Toggle ── */}
-      <button
-        onClick={() => setExpanded(p => !p)}
-        className="w-full flex items-center justify-between px-3 py-2 bg-gray-50 hover:bg-gray-100 transition-colors"
-      >
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className={`px-2 py-0.5 rounded-full font-semibold text-[10px] ${risk.bg} ${risk.color}`}>
-            {risk.label}
-          </span>
-          {report.service_degraded && (
-            <span className="px-2 py-0.5 rounded-full font-semibold text-[10px] bg-gray-200 text-gray-600">
-              Service Degraded
-            </span>
-          )}
-          {typeof fusionScore === "number" && (
-            <span className="text-gray-400">Fusion: {(fusionScore * 100).toFixed(0)}%</span>
-          )}
-          <span className="text-gray-400">Confidence: {(report.confidence_score * 100).toFixed(0)}%</span>
-          {remedy && (
-            <span className="px-2 py-0.5 rounded-full font-semibold text-[10px] bg-amber-100 text-amber-700">
-              🌿 {remedy.condition}
-            </span>
-          )}
-        </div>
-        <span className="text-gray-400 shrink-0">{expanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}</span>
-      </button>
-
-      {expanded && (
-        <div className="bg-white divide-y divide-gray-100">
-
-          {/* ── Clinical Assessment Section ── */}
-          <div className="px-3 py-3 space-y-2.5">
-            <p className="font-semibold text-gray-400 uppercase tracking-wide text-[10px]">Clinical Assessment</p>
-            <div>
-              <p className="font-semibold text-gray-500 uppercase tracking-wide text-[10px]">Emotional State</p>
-              <p className="text-gray-700 mt-0.5">{report.emotional_state_summary}</p>
-            </div>
-            <div>
-              <p className="font-semibold text-gray-500 uppercase tracking-wide text-[10px]">Behavioral Inference</p>
-              <p className="text-gray-700 mt-0.5">{report.behavioral_inference}</p>
-            </div>
-            {report.cognitive_distortions.length > 0 && (
-              <div>
-                <p className="font-semibold text-gray-500 uppercase tracking-wide text-[10px]">Cognitive Distortions</p>
-                <div className="flex flex-wrap gap-1 mt-1">
-                  {report.cognitive_distortions.map((d, i) => (
-                    <span key={i} className="px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded-full text-[10px]">{d}</span>
-                  ))}
-                </div>
-              </div>
-            )}
-            {report.suggested_interventions.length > 0 && (
-              <div>
-                <p className="font-semibold text-gray-500 uppercase tracking-wide text-[10px]">Suggested Interventions</p>
-                <ul className="mt-1 list-disc list-inside space-y-0.5 text-gray-700">
-                  {report.suggested_interventions.map((s, i) => <li key={i}>{s}</li>)}
-                </ul>
-              </div>
-            )}
-            {report.crisis_triggered && report.crisis_resources && (
-              <CrisisBanner resources={report.crisis_resources} />
-            )}
-          </div>
-
-          {/* ── Ancient Wisdom & Treatment Section ── */}
-          {remedy && (
-            <div className="px-3 py-3 space-y-3 bg-amber-50/40">
-              <p className="font-semibold text-amber-700 uppercase tracking-wide text-[10px]">🕉️ Ancient Wisdom & Treatment</p>
-              <div>
-                <p className="font-semibold text-gray-500 uppercase tracking-wide text-[10px] mb-1">Gita Wisdom</p>
-                <p className="text-gray-700 italic">"{remedy.gita_remedy}"</p>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-white rounded-lg p-2 shadow-sm">
-                  <p className="font-semibold text-gray-500 uppercase tracking-wide text-[10px] mb-1">💊 Medications</p>
-                  <p className="text-gray-700">{remedy.medications}</p>
-                </div>
-                <div className="bg-white rounded-lg p-2 shadow-sm">
-                  <p className="font-semibold text-gray-500 uppercase tracking-wide text-[10px] mb-1">📋 Dosage</p>
-                  <p className="text-gray-700">{remedy.dosage}</p>
-                </div>
-              </div>
-              <div className="bg-white rounded-lg p-2 shadow-sm">
-                <p className="font-semibold text-gray-500 uppercase tracking-wide text-[10px] mb-1">🩺 Recommended Treatments</p>
-                <p className="text-gray-700">{remedy.treatments}</p>
-              </div>
-              <p className="text-[9px] text-gray-400 italic">⚠️ Always consult a licensed healthcare professional before taking any medication.</p>
-            </div>
-          )}
-
-        </div>
-      )}
-    </div>
-  );
 };
 
 // ── Main ChatInterface ─────────────────────────────────────────────────────
@@ -332,7 +195,7 @@ const ChatInterface: React.FC<ChatProps> = ({ currentEmotion, sessionId }) => {
           let finalReply = fullResponse;
           let report: PsychReport | undefined;
           let routing: any = undefined;
-          
+
           if (fullResponse.includes("---ROUTING---")) {
             const routingParts = fullResponse.split("---ROUTING---");
             fullResponse = routingParts[0];
@@ -412,7 +275,7 @@ const ChatInterface: React.FC<ChatProps> = ({ currentEmotion, sessionId }) => {
         let finalReply = fullResponse;
         let report: PsychReport | undefined;
         let routing: any = undefined;
-        
+
         if (fullResponse.includes("---ROUTING---")) {
           const routingParts = fullResponse.split("---ROUTING---");
           fullResponse = routingParts[0];
@@ -491,24 +354,16 @@ const ChatInterface: React.FC<ChatProps> = ({ currentEmotion, sessionId }) => {
     }
   };
 
-  const handleStartSJT = async () => {
-    const sjt = await getSjtScenario(segment || 'professional');
-    setMessages(prev => [...prev, { role: "assistant", content: `**Situational Test: ${sjt.title}**\n\n${sjt.description}\n\n${sjt.questions.join("\n")}` }]);
-  };
 
-  const handleStartWriting = async () => {
-    const wt = await getWritingScenario(segment || 'professional');
-    setMessages(prev => [...prev, { role: "assistant", content: `**Therapeutic Writing: ${wt.title}**\n\n${wt.description}\n\n${wt.questions.join("\n")}` }]);
-  };
 
   return (
     <TooltipProvider>
       <div className="flex flex-col h-full bg-white overflow-hidden min-w-0 relative">
-        <MasterReportModal 
-          isOpen={isReportModalOpen} 
-          onClose={() => setIsReportModalOpen(false)} 
-          isGenerating={isGeneratingReport} 
-          report={masterReport} 
+        <MasterReportModal
+          isOpen={isReportModalOpen}
+          onClose={() => setIsReportModalOpen(false)}
+          isGenerating={isGeneratingReport}
+          report={masterReport}
         />
 
         {/* ── PDF Button ── */}
@@ -540,7 +395,7 @@ const ChatInterface: React.FC<ChatProps> = ({ currentEmotion, sessionId }) => {
         {/* ── Intelligence Action Bar ── */}
         <div className="bg-indigo-50/50 border-b border-indigo-100 p-3 flex flex-wrap items-center gap-2 px-5">
           {!isGuestMode && (
-            <button 
+            <button
               onClick={handleGenerateReport}
               className="flex items-center gap-2 bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm hover:bg-indigo-700 transition-colors"
             >
@@ -574,19 +429,18 @@ const ChatInterface: React.FC<ChatProps> = ({ currentEmotion, sessionId }) => {
                   `}
                 >
                   {msg.content}
-                  
+
                   {/* Routing Indicator & Feedback (only for assistant) */}
                   {msg.role === "assistant" && (
                     <div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-100">
                       <div className="flex items-center gap-2">
                         {msg.routing ? (
-                          <span className={`flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded border ${
-                            msg.routing.provider_used === 'ollama' 
-                              ? 'bg-blue-50 text-blue-600 border-blue-100' 
-                              : msg.routing.provider_used === 'groq'
+                          <span className={`flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded border ${msg.routing.provider_used === 'ollama'
+                            ? 'bg-blue-50 text-blue-600 border-blue-100'
+                            : msg.routing.provider_used === 'groq'
                               ? 'bg-purple-50 text-purple-600 border-purple-100'
                               : 'bg-gray-50 text-gray-500 border-gray-200'
-                          }`}>
+                            }`}>
                             {msg.routing.provider_used === 'ollama' ? <Zap size={10} /> : <Cloud size={10} />}
                             {msg.routing.provider_used.toUpperCase()}
                             {msg.routing.latency_ms && <span className="text-gray-400 ml-1">{msg.routing.latency_ms}ms</span>}
@@ -601,17 +455,17 @@ const ChatInterface: React.FC<ChatProps> = ({ currentEmotion, sessionId }) => {
                           <span className="text-[10px] text-amber-600 font-medium whitespace-nowrap">Fallback</span>
                         )}
                       </div>
-                      
+
                       {!isGuestMode && (
                         <div className="flex items-center gap-1">
-                          <button 
+                          <button
                             onClick={() => handleFeedback(index, 5)}
                             className={`p-1 rounded hover:bg-gray-100 transition-colors ${feedbackState[index] === 'up' ? 'text-green-600 bg-green-50' : 'text-gray-400'}`}
                             title="Helpful"
                           >
                             <ThumbsUp size={14} />
                           </button>
-                          <button 
+                          <button
                             onClick={() => handleFeedback(index, 1)}
                             className={`p-1 rounded hover:bg-gray-100 transition-colors ${feedbackState[index] === 'down' ? 'text-red-600 bg-red-50' : 'text-gray-400'}`}
                             title="Not Helpful"
