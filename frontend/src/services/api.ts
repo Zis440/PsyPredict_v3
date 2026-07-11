@@ -262,6 +262,13 @@ export async function* streamChatMessage(
     throw new Error(`Stream request failed with status ${response.status}`);
   }
 
+  if (response.headers.get("content-type")?.includes("application/json")) {
+    const data = await response.json();
+    const formattedResponse = `${data.response}\n---JSON---\n${JSON.stringify(data.report || {})}\n---ROUTING---\n${JSON.stringify(data.routing || {})}`;
+    yield formattedResponse;
+    return;
+  }
+
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
 
