@@ -27,10 +27,13 @@ app/data/*.sqlite3
 # ========================
 # 🧠 LARGE ML ASSETS (Downloaded at runtime by download_models.py)
 # ========================
-app/ml_assets/
 *.h5
 *.keras
 *.gguf
+app/ml_assets/*.h5
+app/ml_assets/*.keras
+app/ml_assets/*.gguf
+
 
 # ========================
 # ⚙️ IDE & OS FILES

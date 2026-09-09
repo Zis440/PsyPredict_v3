@@ -32,10 +32,13 @@ class EmotionDetector:
 
         # Load Face Detector
         try:
-            self.face_cascade = cv2.CascadeClassifier(haar_path)
-            if self.face_cascade.empty():
-                raise IOError("Failed to load Haarcascade XML file")
-            logging.info(f"[OK] Face Detector loaded from {haar_path}")
+            if os.path.exists(haar_path):
+                self.face_cascade = cv2.CascadeClassifier(haar_path)
+            else:
+                self.face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+            if self.face_cascade is None or self.face_cascade.empty():
+                self.face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+            logging.info("[OK] Face Detector loaded successfully")
         except Exception as e:
             logging.error(f"[ERROR] Failed to load Haarcascade: {e}")
 
