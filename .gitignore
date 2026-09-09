@@ -87,3 +87,6 @@ workflow.png
 /docs
 CT project_intelligence_report
 PSYPREDICT_PROJECT_DESCRIPTION.md
+generate_deployment_pdf.mjs
+scripts/generate_deployment_pdf.mjs
+frontend/generate_deployment_pdf.mjs
