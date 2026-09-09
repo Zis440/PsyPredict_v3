@@ -1,5 +1,5 @@
 # ========================
-# 🐍 PYTHON / BACKEND
+# 🐍 PYTHON / RUNTIME
 # ========================
 __pycache__/
 *.py[cod]
@@ -8,41 +8,29 @@ venv/
 .venv/
 env/
 .env
+backend/.env
 instance/
 .pytest_cache/
-backend/.env
+*.log
 
 # ========================
-# ⚛️ NODE / FRONTEND
+# 💾 DB, CACHE & BINARIES (Auto-generated at runtime)
 # ========================
-node_modules/
-/frontend/dist/
-/frontend/build/
-/frontend/.env
-/frontend/.env.local
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.eslintcache
+*.sqlite3
+*.db
+*.pkl
+app/data/chroma_db/
+app/data/index_cache/
+app/data/*.db
+app/data/*.sqlite3
 
 # ========================
-# 📓 JUPYTER NOTEBOOKS
+# 🧠 LARGE ML ASSETS (Downloaded at runtime by download_models.py)
 # ========================
-.ipynb_checkpoints/
-*/.ipynb_checkpoints/
-
-# ========================
-# 💾 DATASETS & LARGE FILES
-# ========================
-# Ignore raw datasets (Standard practice: download them separately)
-datasets/
-/backend/app/ml_assets
-/backend/app/ml_assets/MEDICATION.csv
-
-# NOTE: We do NOT ignore *.h5 or *.keras here because you are using 
-# Git LFS to track them. If you were NOT using LFS, you would uncomment below:
-# *.h5
-# *.keras
+app/ml_assets/
+*.h5
+*.keras
+*.gguf
 
 # ========================
 # ⚙️ IDE & OS FILES
@@ -52,9 +40,3 @@ Thumbs.db
 .vscode/
 .idea/
 *.swp
-
-# ========================
-# 🐳 DOCKER
-# ========================
-# We usually keep the Dockerfile, but ignore local logs/mounts if any
-docker-compose.override.yml
