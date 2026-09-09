@@ -1,9 +1,11 @@
 ---
-title: PsyPredict [Backend]
+title: PsyPredict Backend
 emoji: 🧠
 colorFrom: indigo
 colorTo: purple
-sdk: docker
+sdk: gradio
+sdk_version: 4.44.1
+app_file: app.py
 pinned: false
 ---
 
