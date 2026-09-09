@@ -102,21 +102,26 @@ async def lifespan(app: FastAPI):
         else:
             logger.warning("[WARN] %s NOT reachable", ollama_engine.provider_name.upper())
 
-    # ── 2. Pre-warm ML Models (background) ───────────────────────────────────
-    logger.info("Initializing DistilBERT text emotion model (background)...")
-    from app.services.text_emotion_engine import initialize as init_text
-    _asyncio.create_task(_asyncio.to_thread(init_text, settings.DISTILBERT_MODEL))
+    # ── 2. Pre-warm ML Models (safe sequential background task) ──────────────
+    async def _safe_prewarm_models():
+        try:
+            logger.info("Initializing DistilBERT text emotion model (background)...")
+            from app.services.text_emotion_engine import initialize as init_text
+            await _asyncio.to_thread(init_text, settings.DISTILBERT_MODEL)
 
-    logger.info("Initializing crisis detection classifier (background)...")
-    from app.services.crisis_engine import initialize_crisis_classifier
-    _asyncio.create_task(_asyncio.to_thread(initialize_crisis_classifier))
+            logger.info("Initializing crisis detection classifier (background)...")
+            from app.services.crisis_engine import initialize_crisis_classifier
+            await _asyncio.to_thread(initialize_crisis_classifier)
 
-    # ── 3. Build Knowledge Index (background) ────────────────────────────────
-    if settings.KNOWLEDGE_INDEX_ENABLED:
-        logger.info("Building FAISS knowledge index (background)...")
-        from app.services.knowledge_index import get_knowledge_index
-        ki = get_knowledge_index()
-        _asyncio.create_task(_asyncio.to_thread(ki.build))
+            if settings.KNOWLEDGE_INDEX_ENABLED:
+                logger.info("Building FAISS knowledge index (background)...")
+                from app.services.knowledge_index import get_knowledge_index
+                ki = get_knowledge_index()
+                await _asyncio.to_thread(ki.build)
+        except Exception as exc:
+            logger.warning("Background pre-warming notice: %s", exc)
+
+    _asyncio.create_task(_safe_prewarm_models())
 
     # ── 4. Initialize Patient Memory ─────────────────────────────────────────
     logger.info("Initializing patient memory engine...")

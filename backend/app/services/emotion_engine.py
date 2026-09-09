@@ -25,10 +25,14 @@ class EmotionDetector:
 
         # Load Model
         try:
-            self.model = load_model(model_path)
-            logging.info(f"[OK] Emotion Model loaded from {model_path}")
+            if os.path.exists(model_path):
+                self.model = load_model(model_path, compile=False)
+                logging.info(f"[OK] Emotion Model loaded from {model_path}")
+            else:
+                logging.warning(f"[WARN] Emotion Model not found at {model_path}, will load on demand.")
         except Exception as e:
             logging.error(f"[ERROR] Failed to load model: {e}")
+            self.model = None
 
         # Load Face Detector
         try:

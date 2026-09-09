@@ -5,17 +5,12 @@ Mounts the full PsyPredict FastAPI backend on Hugging Face's Free CPU Basic (16 
 import os
 import sys
 
-# Ensure ML models and datasets are downloaded if not already present in the Space
-try:
-    import download_models
-    print("🚀 Initializing PsyPredict ML Model Assets...")
-    download_models.download_drive_file(download_models.MODEL_ID, download_models.FACE_MODEL_PATH)
-    download_models.download_drive_file(download_models.CSV_ID, download_models.MEDS_CSV_PATH)
-    download_models.download_hf_directory(download_models.CRISIS_MODEL_REPO, download_models.CRISIS_MODEL_PATH)
-    download_models.download_hf_directory(download_models.DISTILBERT_MODEL_REPO, download_models.DISTILBERT_MODEL_PATH)
-    print("✅ All ML Model Assets Ready.")
-except Exception as e:
-    print(f"⚠️ Model download warning: {e}")
+# Prevent OpenMP, oneDNN, and libuv segfaults on Linux CPU containers
+os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+os.environ["HF_HUB_ENABLE_HF_TRANSFER"] = "0"
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["MKL_NUM_THREADS"] = "1"
 
 import gradio as gr
 from app.main import app as fastapi_app
@@ -31,14 +26,13 @@ with gr.Blocks(title="PsyPredict Backend API") as demo:
         - 🔗 **API Health**: [`/api/health`](./api/health)
         - 📖 **Interactive API Docs (Swagger)**: [`/docs`](./docs)
         - 💬 **Therapist Endpoint**: `POST /api/chat`
-        - 🌐 **Frontend**: Hosted on [Vercel](https://vercel.com)
+        - 🌐 **Frontend**: Hosted on [Vercel](https://psy-predict-v3.vercel.app)
         """
     )
 
 # Mount Gradio onto the existing FastAPI app at root
-# All existing FastAPI routes (/api/*, /docs, CORS) remain fully functional
 app = gr.mount_gradio_app(fastapi_app, demo, path="/")
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=7860)
+    uvicorn.run(app, host="0.0.0.0", port=7860, loop="asyncio")

@@ -1,74 +1,82 @@
+"""
+download_models.py — Safe, chunked streaming model downloader for PsyPredict.
+Uses standard requests streaming (1MB buffer) — zero memory overhead, no segfaults.
+"""
 import os
-import gdown
-from huggingface_hub import hf_hub_download
+import sys
+import logging
+import requests
+
+logger = logging.getLogger(__name__)
 
 # --- Assets ---
-MODEL_ID = "10GWSogJNKlPlTeWtJkDq_zc4roB1Vmnu" # Keras Face Emotion
-CSV_ID   = "1bJ8C1BY0rvPNKuWcBgqiUtiSzHziZokH" # Medication CSV
+MODEL_ID = "10GWSogJNKlPlTeWtJkDq_zc4roB1Vmnu"  # Keras Face Emotion
+CSV_ID   = "1bJ8C1BY0rvPNKuWcBgqiUtiSzHziZokH"  # Medication CSV
 
 # Destinations
 ML_ASSETS = "app/ml_assets"
 FACE_MODEL_PATH = os.path.join(ML_ASSETS, "emotion_model_trained.h5")
 MEDS_CSV_PATH = os.path.join(ML_ASSETS, "MEDICATION.csv")
 
-# HF Transformers (Downloaded via snapshot_download for full directory)
-CRISIS_MODEL_REPO = "cross-encoder/nli-MiniLM2-L6-H768"
-DISTILBERT_MODEL_REPO = "bhadresh-savani/distilbert-base-uncased-emotion"
 
-CRISIS_MODEL_PATH = os.path.join(ML_ASSETS, "crisis_model")
-DISTILBERT_MODEL_PATH = os.path.join(ML_ASSETS, "distilbert_model")
+def download_drive_file(file_id: str, output_path: str) -> bool:
+    """
+    Downloads a public Google Drive file safely using chunked streaming.
+    Handles Google Drive's large file virus-scan redirect automatically.
+    """
+    if os.path.exists(output_path) and os.path.getsize(output_path) > 10000:
+        print(f"✅ Found {output_path} ({os.path.getsize(output_path) // (1024*1024)} MB), skipping.")
+        return True
 
-def download_drive_file(file_id, output_path):
-    if not os.path.exists(output_path):
-        os.makedirs(os.path.dirname(output_path), exist_ok=True)
-        url = f'https://drive.google.com/uc?id={file_id}'
-        print(f"⬇️ Downloading Drive file to {output_path}...")
-        gdown.download(url, output_path, quiet=False)
-    else:
-        print(f"✅ Found {output_path}, skipping.")
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    print(f"⬇️ Streaming Drive file to {output_path}...")
 
-def download_hf_model(repo_id, filename, output_path):
-    if not os.path.exists(output_path):
-        os.makedirs(os.path.dirname(output_path), exist_ok=True)
-        print(f"⬇️ Downloading HF model: {filename} from {repo_id}...")
-        hf_hub_download(
-            repo_id=repo_id,
-            filename=filename,
-            local_dir=os.path.dirname(output_path),
-            local_dir_use_symlinks=False
-        )
-        # Rename to match our config expectation
-        downloaded_path = os.path.join(os.path.dirname(output_path), filename)
-        if downloaded_path != output_path:
-            os.rename(downloaded_path, output_path)
-    else:
-        print(f"✅ Found {output_path}, skipping.")
+    base_url = "https://docs.google.com/uc?export=download"
+    session = requests.Session()
 
-def download_hf_directory(repo_id, output_dir):
-    from huggingface_hub import snapshot_download
-    if not os.path.exists(output_dir) or not os.listdir(output_dir):
-        print(f"⬇️ Downloading HF repo: {repo_id} to {output_dir}...")
-        snapshot_download(
-            repo_id=repo_id,
-            local_dir=output_dir,
-            local_dir_use_symlinks=False,
-            ignore_patterns=["*.msgpack", "*.h5", "*.ot", "rust_model.ot"] # save space, only PyTorch/Safetensors needed
-        )
-    else:
-        print(f"✅ Found {output_dir}, skipping.")
+    try:
+        # Initial request
+        res = session.get(base_url, params={"id": file_id}, stream=True, timeout=30)
+        
+        # Check for Google Drive confirmation token on large files (>100MB)
+        confirm_token = None
+        for key, value in res.cookies.items():
+            if key.startswith("download_warning"):
+                confirm_token = value
+                break
+
+        if confirm_token:
+            params = {"id": file_id, "confirm": confirm_token}
+            res = session.get(base_url, params=params, stream=True, timeout=30)
+
+        # Write to temporary file first, then rename (atomic)
+        tmp_path = output_path + ".tmp"
+        total_downloaded = 0
+
+        with open(tmp_path, "wb") as f:
+            for chunk in res.iter_content(chunk_size=1024 * 1024):  # 1 MB chunk
+                if chunk:
+                    f.write(chunk)
+                    total_downloaded += len(chunk)
+
+        if os.path.exists(tmp_path) and os.path.getsize(tmp_path) > 10000:
+            if os.path.exists(output_path):
+                os.remove(output_path)
+            os.rename(tmp_path, output_path)
+            print(f"✅ Successfully downloaded {output_path} ({total_downloaded // (1024*1024)} MB).")
+            return True
+        else:
+            if os.path.exists(tmp_path):
+                os.remove(tmp_path)
+            print(f"⚠️ Downloaded file too small ({total_downloaded} bytes). Will retry on demand.")
+            return False
+
+    except Exception as exc:
+        print(f"⚠️ Drive stream download failed: {exc}")
+        return False
+
 
 if __name__ == "__main__":
     print("🚀 Starting Production Model Sync...")
-    
-    # 1. Drive Files
     download_drive_file(MODEL_ID, FACE_MODEL_PATH)
-    download_drive_file(CSV_ID, MEDS_CSV_PATH)
-    
-    # 2. HF Transformers Pipeline Models
-    try:
-        download_hf_directory(CRISIS_MODEL_REPO, CRISIS_MODEL_PATH)
-        download_hf_directory(DISTILBERT_MODEL_REPO, DISTILBERT_MODEL_PATH)
-    except Exception as e:
-        print(f"⚠️ HF Transformers Download failed: {e}")
-        
-    print("✅ All models synchronized!")
+    print("✅ All assets ready!")

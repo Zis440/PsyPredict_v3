@@ -12,7 +12,7 @@
 
 # ── Core Backend (FastAPI) ────────────────────────────────────────────────────
 fastapi>=0.111.0
-uvicorn[standard]>=0.30.0
+uvicorn>=0.30.0
 python-dotenv>=1.0.0
 pydantic>=2.0.0
 pydantic-settings>=2.0.0
@@ -59,4 +59,4 @@ sentence-transformers>=2.7.0
 chromadb>=0.4.0
 
 # ── Hugging Face Space Entrypoint ─────────────────────────────────────────────
-gradio>=4.0.0
+gradio>=5.0.0
