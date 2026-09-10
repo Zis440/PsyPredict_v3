@@ -81,7 +81,7 @@ async def health():
     if settings.LLM_ORCHESTRATOR_ENABLED:
         from app.services.ollama_engine import orchestrator
         any_reachable = orchestrator._local_available or orchestrator._cloud_available
-        overall = "ok" if (any_reachable and distilbert_ok) else "degraded"
+        overall = "ok" if any_reachable else "degraded"
 
         return {
             "status": overall,

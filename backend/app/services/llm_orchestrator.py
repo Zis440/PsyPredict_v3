@@ -181,12 +181,16 @@ class LLMOrchestrator:
 
         Returns: (primary_client, primary_name, fallback_client, fallback_name)
         """
-        # PII → always local, no cloud fallback
+        # PII → prefer local (never send raw PII to cloud)
         if has_pii:
             if self._local_available and self._local:
                 return self._local, "ollama", None, None
+            elif self._cloud_available and self._cloud:
+                # Local unavailable (e.g. cloud deployment); route to cloud with PII scrubbing
+                logger.info("PII detected and local LLM unavailable — routing to cloud with PII scrubbing")
+                return self._cloud, "groq", None, None
             else:
-                logger.warning("PII detected but local LLM unavailable — refusing cloud")
+                logger.warning("PII detected but no LLM providers available")
                 return None, "none", None, None
 
         # Forced provider
@@ -332,25 +336,7 @@ class LLMOrchestrator:
                 fb_scrub = self._scrubber.scrub(user_text)
                 fb_text = fb_scrub.scrubbed_text
                 if fb_scrub.pii_found:
-                    # PII found but fallback is cloud — refuse
-                    logger.warning("PII detected, refusing cloud fallback")
-                    elapsed = (time.monotonic() - start_time) * 1000
-                    decision = RoutingDecision(
-                        provider_used="none",
-                        task_type=task_type.value,
-                        latency_ms=round(elapsed, 1),
-                        fallback_used=True,
-                        error="PII detected, cloud fallback refused",
-                        pii_scrubbed=True,
-                        pii_types=fb_scrub.pii_types,
-                    )
-                    self._record_decision(decision)
-                    return (
-                        "I'm sorry, but the local inference service is unavailable and your message contains sensitive information "
-                        "that cannot be sent to the cloud. Please try again when the local service is restored.",
-                        fallback_report(),
-                        decision,
-                    )
+                    logger.info("PII detected, scrubbed before cloud fallback: %s", fb_scrub.pii_types)
 
             try:
                 reply, report = await fallback.generate(

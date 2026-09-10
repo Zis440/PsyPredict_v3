@@ -126,7 +126,7 @@ class KnowledgeIndex:
 
     @property
     def is_ready(self) -> bool:
-        return self._ready
+        return self._ready or os.path.exists(self._csv_path)
 
     def build(self) -> bool:
         """

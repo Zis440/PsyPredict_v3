@@ -93,12 +93,15 @@ _PATTERNS: List[Tuple[str, re.Pattern, str]] = [
 # Name detection heuristic: "my name is X Y", "I am X Y", "I'm X"
 _NAME_PATTERNS: List[re.Pattern] = [
     re.compile(
-        r"(?:my\s+name\s+is|i\s+am|i\'m|call\s+me|this\s+is)\s+"
-        r"([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})",
+        r"(?:my\s+name\s+is|call\s+me|this\s+is)\s+"
+        r"([A-Za-z]+(?:\s+[A-Za-z]+){0,2})",
         re.IGNORECASE,
     ),
     re.compile(
-        r"(?:name|patient|user)[:\s]+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})",
+        r"(?:I\s+am|I\'m)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){0,2})",
+    ),
+    re.compile(
+        r"(?:name|patient|user)[:\s]+([A-Za-z]+(?:\s+[A-Za-z]+){0,2})",
         re.IGNORECASE,
     ),
 ]
@@ -255,6 +258,12 @@ class PIIScrubber:
 _FALSE_POSITIVE_NAMES = {
     "depression", "anxiety", "stress", "fear", "anger",
     "happy", "sad", "worried", "scared", "confused",
+    "feeling", "stressed", "exhausted", "overwhelmed", "tired",
+    "struggling", "hurting", "lost", "broken", "trying",
+    "hopeless", "alone", "afraid", "numb", "empty", "guilty",
+    "ashamed", "worthless", "helpless", "restless", "nervous",
+    "panicking", "fine", "good", "bad", "sick", "done", "here",
+    "not", "just", "so", "really", "very", "anxious", "depressed",
     "doctor", "therapist", "counselor", "psychologist",
     "monday", "tuesday", "wednesday", "thursday", "friday",
     "saturday", "sunday", "january", "february", "march",
