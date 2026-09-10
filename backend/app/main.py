@@ -209,11 +209,11 @@ def create_app() -> FastAPI:
     import time as _time
     from fastapi.responses import HTMLResponse
 
-    @app.get("/ping", tags=["Health"])
+    @app.api_route("/ping", methods=["GET", "HEAD"], tags=["Health"])
     async def ping():
         return {"status": "alive", "timestamp": _time.time()}
 
-    @app.get("/", response_class=HTMLResponse, tags=["General"])
+    @app.api_route("/", methods=["GET", "HEAD"], response_class=HTMLResponse, tags=["General"])
     async def root():
         return """<!DOCTYPE html>
 <html>
