@@ -79,4 +79,7 @@ class Settings(BaseSettings):
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
     """Returns a cached singleton Settings instance."""
-    return Settings()
+    s = Settings()
+    if s.GROQ_MODEL in ("llama-3.3-70b-versatile", "llama-3.1-70b-versatile", "llama3", ""):
+        s.GROQ_MODEL = "openai/gpt-oss-120b"
+    return s
