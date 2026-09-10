@@ -1,11 +1,7 @@
 import axios from "axios";
 
-// ✅ Use Vite environment variable
-const BASE_URL = import.meta.env.VITE_BACKEND_URL;
-
-if (!BASE_URL) {
-  throw new Error("❌ VITE_BACKEND_URL is not defined");
-}
+// ✅ Use Vite environment variable with Render cloud fallback
+const BASE_URL = import.meta.env.VITE_BACKEND_URL || "https://psypredict-v3.onrender.com";
 
 // Create a configured instance of axios
 export const apiClient = axios.create({
