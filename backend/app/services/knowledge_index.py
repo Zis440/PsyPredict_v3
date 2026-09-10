@@ -217,6 +217,7 @@ class KnowledgeIndex:
 
         Returns:
             List of KnowledgeResult ordered by relevance
+        """
         if not self._ready or self._model is None or self._index is None:
             return self._fallback_search(query, top_k, emotion)
 

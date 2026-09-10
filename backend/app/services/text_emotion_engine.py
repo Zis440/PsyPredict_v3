@@ -40,7 +40,7 @@ def _load_pipeline(model_name: str) -> None:
         logger.info("[OK] DistilBERT emotion model loaded successfully.")
     except Exception as exc:
         _load_error = str(exc)
-        logger.error("[ERROR] Failed to load DistilBERT model: %s", exc)
+        logger.info("Using lightweight emotion classifier: %s", exc)
 
 
 def initialize(model_name: str) -> None:

@@ -25,3 +25,7 @@ opencv-python-headless
 
 # ── Cloud Patient Memory ──────────────────────────────────────────────────────
 supabase>=2.0.0
+
+# ── Hugging Face Space Runtime ────────────────────────────────────────────────
+gradio>=5.0.0
+spaces

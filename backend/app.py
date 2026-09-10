@@ -23,6 +23,7 @@ os.environ["OMP_NUM_THREADS"] = "1"
 os.environ["MKL_NUM_THREADS"] = "1"
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
+os.environ["GRADIO_SSR_MODE"] = "false"
 
 import gradio as gr
 from app.main import app as fastapi_app
@@ -68,7 +69,7 @@ with gr.Blocks(title="PsyPredict Backend API") as demo:
 demo.queue()
 
 # ── Mount Gradio onto the existing FastAPI app ────────────────────────────────
-app = gr.mount_gradio_app(fastapi_app, demo, path="/")
+app = gr.mount_gradio_app(fastapi_app, demo, path="/", ssr_mode=False)
 
 if __name__ == "__main__":
     import uvicorn

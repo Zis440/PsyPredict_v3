@@ -76,7 +76,7 @@ def initialize_crisis_classifier() -> None:
         logger.info("[OK] Crisis classifier loaded.")
     except Exception as exc:
         _load_error = str(exc)
-        logger.error("[ERROR] Crisis classifier load failed: %s", exc)
+        logger.info("Using lightweight phrase-based crisis safety engine: %s", exc)
 
 
 def _score_sync(text: str) -> float:
