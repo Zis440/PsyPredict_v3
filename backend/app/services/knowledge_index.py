@@ -162,7 +162,7 @@ class KnowledgeIndex:
             if embeddings is None:
                 # Compute embeddings
                 logger.info("Knowledge index: Computing embeddings with %s...", self._model_name)
-                self._model = SentenceTransformer(self._model_name)
+                self._model = SentenceTransformer(self._model_name, device="cpu")
                 embeddings = self._model.encode(
                     self._documents,
                     show_progress_bar=False,
@@ -175,7 +175,7 @@ class KnowledgeIndex:
             else:
                 # Still need model for query encoding
                 logger.info("Knowledge index: Loaded cached embeddings from %s", cache_path)
-                self._model = SentenceTransformer(self._model_name)
+                self._model = SentenceTransformer(self._model_name, device="cpu")
 
             # Build FAISS index (Inner Product for cosine similarity with normalized vectors)
             dim = embeddings.shape[1]
@@ -217,9 +217,8 @@ class KnowledgeIndex:
 
         Returns:
             List of KnowledgeResult ordered by relevance
-        """
         if not self._ready or self._model is None or self._index is None:
-            return []
+            return self._fallback_search(query, top_k, emotion)
 
         try:
             # Build search query with emotion context
@@ -270,6 +269,58 @@ class KnowledgeIndex:
         except Exception as exc:
             logger.error("Knowledge search failed: %s", exc)
             return []
+
+    def _fallback_search(
+        self,
+        query: str,
+        top_k: int = 3,
+        emotion: Optional[str] = None,
+    ) -> List[KnowledgeResult]:
+        """Fast keyword/lexical search directly over MEDICATION.csv without FAISS."""
+        if self._df is None:
+            if os.path.exists(self._csv_path):
+                try:
+                    self._df = pd.read_csv(self._csv_path)
+                except Exception:
+                    return []
+            else:
+                return []
+
+        tokens = set(query.lower().split())
+        if emotion and emotion != "neutral":
+            tokens.add(emotion.lower())
+
+        stopwords = {"i", "me", "my", "feel", "feeling", "am", "is", "a", "the", "and", "to", "in", "it", "of", "so"}
+        keywords = [t for t in tokens if len(t) > 2 and t not in stopwords]
+        if not keywords:
+            keywords = ["anxiety", "depression", "stress"]
+
+        results = []
+        seen_conditions = set()
+
+        for idx, row in self._df.iterrows():
+            cond = str(row.get("Mental Condition", ""))
+            symp = str(row.get("Symptoms", ""))
+            text = f"{cond} {symp}".lower()
+            matches = sum(1 for kw in keywords if kw in text)
+            if matches > 0 and cond not in seen_conditions:
+                seen_conditions.add(cond)
+                score = min(0.5 + (matches * 0.15), 0.98)
+                results.append((
+                    score,
+                    KnowledgeResult(
+                        condition=cond,
+                        symptoms=symp,
+                        treatments=str(row.get("Recommended Treatments", "")),
+                        medications=str(row.get("Medications", "")),
+                        dosage=str(row.get("Dosage", "")),
+                        gita_remedy=str(row.get("Advanced Remedies", "")),
+                        relevance_score=score,
+                    )
+                ))
+
+        results.sort(key=lambda x: x[0], reverse=True)
+        return [r[1] for r in results[:top_k]]
 
     def get_gita_context(
         self,

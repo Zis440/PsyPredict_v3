@@ -35,6 +35,7 @@ def _load_pipeline(model_name: str) -> None:
             top_k=None,           # Return ALL labels
             truncation=True,
             max_length=512,
+            device=-1,            # Force CPU (prevents ZeroGPU CUDA init crash)
         )
         logger.info("[OK] DistilBERT emotion model loaded successfully.")
     except Exception as exc:
@@ -52,24 +53,50 @@ class TextEmotionEngine:
     Wraps the HuggingFace DistilBERT pipeline for async use in FastAPI.
     """
 
+    def _fallback_classify(self, text: str) -> List[EmotionLabel]:
+        """
+        Fast, zero-dependency psychological sentiment & emotion classifier.
+        Used on lightweight cloud deployments or when DistilBERT is not loaded.
+        """
+        LEXICON = {
+            "sadness": ["sad", "depressed", "unhappy", "hopeless", "crying", "grief", "miserable", "down", "lonely", "hurt", "despair", "empty", "loss", "tired", "giving up", "pain"],
+            "joy": ["happy", "great", "joy", "excited", "cheerful", "delighted", "love", "wonderful", "glad", "better", "grateful", "blessed", "smiling", "peaceful", "good"],
+            "fear": ["anxious", "anxiety", "afraid", "scared", "fear", "panic", "worried", "nervous", "terrified", "dread", "stress", "stressed", "overwhelmed", "frightened"],
+            "anger": ["angry", "mad", "furious", "hate", "irritated", "annoyed", "rage", "frustrated", "resentful", "hostile", "disgusted", "bitter"],
+            "surprise": ["shocked", "surprised", "unexpected", "astonished", "sudden", "stunned", "disbelief"],
+        }
+        t = text.lower()
+        scores = {}
+        matched = False
+        for emotion, words in LEXICON.items():
+            count = sum(1 for w in words if w in t)
+            if count > 0:
+                matched = True
+            scores[emotion] = 0.05 + count * 0.40
+
+        scores["neutral"] = 0.60 if not matched else 0.05
+
+        total = sum(scores.values())
+        labels = [
+            EmotionLabel(label=emo, score=round(score / total, 4))
+            for emo, score in scores.items()
+        ]
+        return sorted(labels, key=lambda x: x.score, reverse=True)
+
     def _classify_sync(self, text: str) -> List[EmotionLabel]:
-        if _pipeline is None:
-            return []
-        try:
-            results = _pipeline(text[:512])
-            if not results:
-                return []
-            # pipeline returns list-of-list when top_k=None
-            raw = results[0] if isinstance(results[0], list) else results
-            labels = [
-                EmotionLabel(label=item["label"].lower(), score=round(item["score"], 4))
-                for item in raw
-            ]
-            # Sort descending by score
-            return sorted(labels, key=lambda x: x.score, reverse=True)
-        except Exception as exc:
-            logger.error("DistilBERT inference error: %s", exc)
-            return []
+        if _pipeline is not None:
+            try:
+                results = _pipeline(text[:512])
+                if results:
+                    raw = results[0] if isinstance(results[0], list) else results
+                    labels = [
+                        EmotionLabel(label=item["label"].lower(), score=round(item["score"], 4))
+                        for item in raw
+                    ]
+                    return sorted(labels, key=lambda x: x.score, reverse=True)
+            except Exception as exc:
+                logger.error("DistilBERT inference error: %s", exc)
+        return self._fallback_classify(text)
 
     async def classify(self, text: str) -> List[EmotionLabel]:
         """

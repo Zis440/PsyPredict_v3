@@ -207,10 +207,46 @@ def create_app() -> FastAPI:
 
     # ── Keep-Alive ping (no model deps) ──────────────────────────────────────
     import time as _time
+    from fastapi.responses import HTMLResponse
 
     @app.get("/ping", tags=["Health"])
     async def ping():
         return {"status": "alive", "timestamp": _time.time()}
+
+    @app.get("/", response_class=HTMLResponse, tags=["General"])
+    async def root():
+        return """<!DOCTYPE html>
+<html>
+<head>
+    <title>PsyPredict Backend API</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f172a; color: #f8fafc; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; }
+        .card { background: #1e293b; border-radius: 16px; padding: 36px; max-width: 540px; width: 100%; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5); border: 1px solid #334155; }
+        h1 { margin-top: 0; font-size: 24px; color: #38bdf8; }
+        .badge { background: #065f46; color: #34d399; padding: 4px 10px; border-radius: 9999px; font-size: 13px; font-weight: 600; display: inline-block; margin-bottom: 16px; }
+        p { color: #94a3b8; line-height: 1.6; }
+        .links { display: flex; flex-direction: column; gap: 10px; margin-top: 24px; }
+        a { display: block; text-decoration: none; background: #334155; color: #f1f5f9; padding: 12px 18px; border-radius: 8px; font-weight: 500; transition: background 0.2s; }
+        a:hover { background: #475569; }
+        .accent { background: #0284c7; color: white; }
+        .accent:hover { background: #0369a1; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>🧠 PsyPredict Backend API</h1>
+        <div class="badge">🟢 ONLINE — CPU 16GB</div>
+        <p>Production multimodal mental health AI system with DistilBERT emotion analysis, FAISS semantic knowledge retrieval, and Groq Llama 3.3 orchestration.</p>
+        <div class="links">
+            <a href="/docs" class="accent">📖 Interactive Swagger API Docs (/docs)</a>
+            <a href="/api/health">🔍 API Health Status (/api/health)</a>
+            <a href="https://psy-predict-v3.vercel.app" target="_blank">🌐 PsyPredict Frontend on Vercel ↗</a>
+        </div>
+    </div>
+</body>
+</html>"""
 
     return app
 
