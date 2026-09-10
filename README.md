@@ -180,6 +180,7 @@ PsyPredict/
 │   └── local_setup.ps1                 # Windows PowerShell quick-start
 ├── docs/
 │   ├── DEPLOY.md                       # Full cloud deployment guide
+│   ├── FREE_FULLSTACK_DEPLOYMENT_TUTORIAL.pdf # 100% Free deployment master blueprint
 │   ├── OLLAMA_VPS_GUIDE.md             # Self-hosted Ollama on VPS/EC2
 │   ├── PIPELINE_ARCHITECTURE_GUIDE.md
 │   └── WORKFLOW_ARCHITECTURE_GUIDE.md
