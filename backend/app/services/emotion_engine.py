@@ -2,8 +2,6 @@ import os
 import cv2
 import numpy as np
 import logging
-from tensorflow.keras.models import load_model
-from tensorflow.keras.preprocessing.image import img_to_array
 
 # Define the exact labels from your notebook
 EMOTION_LABELS = ['happy', 'sad', 'angry', 'surprised', 'neutral', 'fear', 'disgust']
@@ -23,9 +21,10 @@ class EmotionDetector:
         model_path = os.path.join(assets_path, 'emotion_model_trained.h5')
         haar_path = os.path.join(assets_path, 'haarcascade_frontalface_default.xml')
 
-        # Load Model
+        # Load Model (Lazy TensorFlow load)
         try:
             if os.path.exists(model_path):
+                from tensorflow.keras.models import load_model
                 self.model = load_model(model_path, compile=False)
                 logging.info(f"[OK] Emotion Model loaded from {model_path}")
             else:
@@ -77,6 +76,7 @@ class EmotionDetector:
         roi_gray = gray[y:y+h, x:x+w]
         
         # 5. Preprocessing (Resize to 48x48 & Normalize)
+        from tensorflow.keras.preprocessing.image import img_to_array
         roi = cv2.resize(roi_gray, (48, 48), interpolation=cv2.INTER_AREA)
         roi = roi.astype("float") / 255.0
         roi = img_to_array(roi)
