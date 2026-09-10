@@ -13,7 +13,7 @@ class Settings(BaseSettings):
 
     # ── Groq API (cloud LLM inference) ────────────────────────────────────────
     GROQ_API_KEY: str = ""
-    GROQ_MODEL: str = "llama-3.3-70b-versatile"
+    GROQ_MODEL: str = "openai/gpt-oss-120b"
 
     # ── Ollama (local LLM inference) ──────────────────────────────────────────
     # OLLAMA_MODEL_NAME is the canonical variable used everywhere:
