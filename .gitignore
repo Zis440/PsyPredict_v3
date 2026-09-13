@@ -37,6 +37,8 @@ yarn-error.log*
 # ========================
 # Ignore raw datasets
 datasets/
+PSY V3 NEW KNOELWDGE BASE MATERIALS/
+
 
 # NOTE: We do NOT ignore *.h5 or *.keras here because you are using
 # Git LFS to track them. If you were NOT using LFS, you would uncomment below:

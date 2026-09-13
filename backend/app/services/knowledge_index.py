@@ -330,22 +330,35 @@ class KnowledgeIndex:
         top_k: int = 2,
     ) -> Optional[str]:
         """
-        Get formatted Gita context for LLM prompt injection.
-
-        Returns a string with top-k Gita insights relevant to the query.
+        Get formatted Multi-Scriptural & Gita context for LLM prompt injection.
+        Queries the Vedic Knowledge Graph (Gita, Upanishads, Mahabharata, Vedas, Ramayana)
+        to extract philosophical principles, root causes, patient-friendly metaphors,
+        and gentle micro-actions, combined with FAISS semantic search.
         """
-        results = self.search(query, top_k=top_k, emotion=emotion)
-        if not results:
-            return None
-
         parts = []
-        for i, r in enumerate(results, 1):
-            if r.gita_remedy and r.gita_remedy != "nan":
-                parts.append(
-                    f"[Gita Insight {i} — {r.condition}]\n{r.gita_remedy}"
-                )
+
+        # 1. Query the Vedic Knowledge Graph (multi-hop relational guidance)
+        try:
+            from app.services.vedic_graph_service import get_vedic_graph_service
+            v_service = get_vedic_graph_service()
+            if v_service.is_ready:
+                graph_guidances = v_service.find_guidance(query=query, emotion=emotion, top_k=top_k)
+                for g in graph_guidances:
+                    parts.append(f"[{g.scripture} Insight — {g.citation}]\n{g.to_prompt_context()}")
+        except Exception as e:
+            logger.warning("Vedic graph retrieval failed in get_gita_context: %s", e)
+
+        # 2. Vector search over MEDICATION.csv for clinical remedies
+        results = self.search(query, top_k=top_k, emotion=emotion)
+        if results:
+            for i, r in enumerate(results, 1):
+                if r.gita_remedy and str(r.gita_remedy).strip() != "nan":
+                    parts.append(
+                        f"[Clinical & Gita Remedy {i} — {r.condition}]\n{r.gita_remedy}"
+                    )
 
         return "\n\n".join(parts) if parts else None
+
 
     # --- Cache Management -------------------------------------------------------
 
