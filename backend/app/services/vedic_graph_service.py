@@ -73,22 +73,23 @@ class ScripturalGuidance:
     def to_prompt_context(self) -> str:
         """
         Formats guidance cleanly for the LLM system prompt.
-        Emphasizes the simple metaphor and gentle action for patient accessibility.
+        Emphasizes the simple metaphor and gentle action for patient accessibility,
+        without priming the LLM to recite source scripture names or verse numbers.
         """
         lines = [
-            f"Ancient Wisdom Source: {self.scripture} ({self.citation})",
-            f"Core Insight: \"{self.text}\"",
+            f"Psychological Insight: \"{self.text}\"",
         ]
         if self.patient_metaphor:
-            lines.append(f"Gentle Metaphor for Patient: {self.patient_metaphor}")
+            lines.append(f"Everyday Metaphor: {self.patient_metaphor}")
         if self.root_cause:
-            lines.append(f"Root Mechanism: {self.root_cause}")
+            lines.append(f"Psychological Mechanism: {self.root_cause}")
         if self.principle:
             lines.append(f"Guiding Principle: {self.principle}")
         if self.clinical_parallel:
             lines.append(f"Modern Therapeutic Parallel: {self.clinical_parallel}")
         if self.gentle_action:
-            lines.append(f"Gentle Micro-Step for Patient: {self.gentle_action}")
+            lines.append(f"Gentle Micro-Step: {self.gentle_action}")
+        lines.append(f"(Background reference for context only: {self.scripture} {self.citation} — do not recite source or verse numbers)")
         return "\n".join(lines)
 
 

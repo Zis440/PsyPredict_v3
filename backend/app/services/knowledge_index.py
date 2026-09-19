@@ -344,7 +344,7 @@ class KnowledgeIndex:
             if v_service.is_ready:
                 graph_guidances = v_service.find_guidance(query=query, emotion=emotion, top_k=top_k)
                 for g in graph_guidances:
-                    parts.append(f"[{g.scripture} Insight — {g.citation}]\n{g.to_prompt_context()}")
+                    parts.append(f"[Contemplative Psychological Principle]\n{g.to_prompt_context()}")
         except Exception as e:
             logger.warning("Vedic graph retrieval failed in get_gita_context: %s", e)
 
@@ -354,7 +354,7 @@ class KnowledgeIndex:
             for i, r in enumerate(results, 1):
                 if r.gita_remedy and str(r.gita_remedy).strip() != "nan":
                     parts.append(
-                        f"[Clinical & Gita Remedy {i} — {r.condition}]\n{r.gita_remedy}"
+                        f"[Clinical & Contemplative Perspective — {r.condition}]\n{r.gita_remedy}"
                     )
 
         return "\n\n".join(parts) if parts else None

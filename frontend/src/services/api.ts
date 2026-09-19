@@ -211,18 +211,23 @@ export const getGitaAdvice = async (condition: string) => {
   return response.data;
 };
 
+import type { BiometricTelemetry } from "./biometrics";
+export type { BiometricTelemetry };
+
 // 3. Send Message to AI Therapist (standard)
 export const sendChatMessage = async (
   message: string,
   emotion: string,
   history: Array<{ role: string; content: string }>,
-  user_id?: string
+  user_id?: string,
+  biometrics?: BiometricTelemetry
 ): Promise<ChatResponse> => {
   const response = await apiClient.post("/chat", {
     message,
     emotion,
     history,
     user_id,
+    biometrics,
   });
   return response.data;
 };
@@ -231,7 +236,8 @@ export const sendChatMessage = async (
 export async function* streamChatMessage(
   message: string,
   emotion: string,
-  history: Array<{ role: string; content: string }>
+  history: Array<{ role: string; content: string }>,
+  biometrics?: BiometricTelemetry
 ): AsyncIterableIterator<string> {
   const controller = new AbortController();
   // 300-second timeout — llama3 on CPU can take 2-3 min to generate a full response
@@ -242,7 +248,7 @@ export async function* streamChatMessage(
     response = await fetch(`${BASE_URL}/api/chat`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message, emotion, history, stream: true }),
+      body: JSON.stringify({ message, emotion, history, stream: true, biometrics }),
       signal: controller.signal,
     });
   } catch (err: any) {

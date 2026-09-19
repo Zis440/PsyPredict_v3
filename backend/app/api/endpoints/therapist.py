@@ -83,6 +83,7 @@ async def chat(req: ChatRequest):  # type: ignore[misc]
     settings = get_settings()
     user_text = req.message
     face_emotion = req.emotion or "neutral"
+    biometrics = req.biometrics
     history = req.history
     user_id = req.user_id
 
@@ -140,8 +141,9 @@ async def chat(req: ChatRequest):  # type: ignore[misc]
     fusion = fusion_engine.compute(
         dominant_text_emotion=dominant_text_emotion,
         face_emotion=face_emotion,
+        biometrics=biometrics,
     )
-    logger.info("Fusion risk score: %.4f (dominant: %s)", fusion.final_risk_score, fusion.dominant_modality)
+    logger.info("Fusion risk score: %.4f (dominant: %s, triguna: %s)", fusion.final_risk_score, fusion.dominant_modality, fusion.triguna_dominant)
 
     # ── Step 4: Patient Memory + Preferences Retrieval ───────────────────────
     patient_profile = None
@@ -191,14 +193,24 @@ async def chat(req: ChatRequest):  # type: ignore[misc]
             from app.services.knowledge_index import get_knowledge_index
             ki = get_knowledge_index()
             if ki.is_ready:
+                # Align RAG search query with somatic & Triguna visual biomarkers
+                rag_query = user_text
+                if biometrics:
+                    triguna = getattr(biometrics, "triguna_dominant", None)
+                    gaze = getattr(biometrics, "gaze_direction", None)
+                    if triguna == "rajas" or gaze == "darting":
+                        rag_query = f"{user_text} restless agitated breath grounding equanimity"
+                    elif triguna == "tamas" or gaze == "downcast":
+                        rag_query = f"{user_text} grief sorrow Vishada despondency courage self-worth"
+
                 # Get semantically relevant Gita context
                 gita_context = ki.get_gita_context(
-                    query=user_text,
+                    query=rag_query,
                     emotion=dominant_text_emotion,
                     top_k=2,
                 )
                 # Get top remedy result for structured response
-                results = ki.search(user_text, top_k=1, emotion=dominant_text_emotion)
+                results = ki.search(rag_query, top_k=1, emotion=dominant_text_emotion)
                 if results:
                     r = results[0]
                     try:
@@ -247,6 +259,7 @@ async def chat(req: ChatRequest):  # type: ignore[misc]
                     patient_profile=patient_profile,
                     semantic_memories=semantic_memories,
                     gita_context=gita_context,
+                    biometrics=biometrics,
                 ):
                     yield token
             else:
@@ -259,6 +272,7 @@ async def chat(req: ChatRequest):  # type: ignore[misc]
                     patient_profile=patient_profile,
                     semantic_memories=semantic_memories,
                     gita_context=gita_context,
+                    biometrics=biometrics,
                 ):
                     yield token
                 _elapsed = (_time.monotonic() - _start) * 1000
@@ -282,6 +296,7 @@ async def chat(req: ChatRequest):  # type: ignore[misc]
             patient_profile=patient_profile,
             semantic_memories=semantic_memories,
             gita_context=gita_context,
+            biometrics=biometrics,
             task_type=TaskType.ROUTINE_CHAT,
         )
         routing_meta = RoutingMetadata(

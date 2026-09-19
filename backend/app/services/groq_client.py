@@ -114,6 +114,7 @@ class GroqClient(BaseLLMClient):
         patient_profile: Optional[str] = None,
         semantic_memories: Optional[str] = None,
         gita_context: Optional[str] = None,
+        biometrics: Optional[Any] = None,
     ) -> tuple[str, PsychReport]:
         if not self._settings.GROQ_API_KEY:
             logger.warning("GROQ_API_KEY not set — returning fallback report.")
@@ -132,6 +133,7 @@ class GroqClient(BaseLLMClient):
             patient_profile=patient_profile,
             semantic_memories=semantic_memories,
             gita_context=gita_context,
+            biometrics=biometrics,
         )
 
         models_to_try = [self._settings.GROQ_MODEL]
@@ -143,8 +145,8 @@ class GroqClient(BaseLLMClient):
             payload = {
                 "model": model_name,
                 "messages": messages,
-                "temperature": 0.2,
-                "max_tokens": 1024,
+                "temperature": 0.3,
+                "max_tokens": 1536,
                 "stream": False,
             }
             try:
@@ -179,6 +181,7 @@ class GroqClient(BaseLLMClient):
         patient_profile: Optional[str] = None,
         semantic_memories: Optional[str] = None,
         gita_context: Optional[str] = None,
+        biometrics: Optional[Any] = None,
     ) -> AsyncIterator[str]:
         if not self._settings.GROQ_API_KEY:
             logger.warning("GROQ_API_KEY not set — returning fallback stream.")
@@ -195,6 +198,7 @@ class GroqClient(BaseLLMClient):
             patient_profile=patient_profile,
             semantic_memories=semantic_memories,
             gita_context=gita_context,
+            biometrics=biometrics,
         )
 
         models_to_try = [self._settings.GROQ_MODEL]
@@ -206,8 +210,8 @@ class GroqClient(BaseLLMClient):
             payload = {
                 "model": model_name,
                 "messages": messages,
-                "temperature": 0.2,
-                "max_tokens": 1024,
+                "temperature": 0.3,
+                "max_tokens": 1536,
                 "stream": True,
             }
             try:

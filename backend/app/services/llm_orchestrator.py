@@ -250,6 +250,7 @@ class LLMOrchestrator:
         patient_profile: Optional[str] = None,
         semantic_memories: Optional[str] = None,
         gita_context: Optional[str] = None,
+        biometrics: Optional[Any] = None,
         task_type: TaskType = TaskType.ROUTINE_CHAT,
         force_provider: Optional[ProviderPreference] = None,
     ) -> tuple[str, PsychReport, RoutingDecision]:
@@ -302,6 +303,7 @@ class LLMOrchestrator:
                 patient_profile=patient_profile,
                 semantic_memories=semantic_memories,
                 gita_context=gita_context,
+                biometrics=biometrics,
             )
             elapsed = (time.monotonic() - start_time) * 1000
 
@@ -347,6 +349,7 @@ class LLMOrchestrator:
                     patient_profile=patient_profile,
                     semantic_memories=semantic_memories,
                     gita_context=gita_context,
+                    biometrics=biometrics,
                 )
                 elapsed = (time.monotonic() - start_time) * 1000
 
@@ -400,6 +403,7 @@ class LLMOrchestrator:
         patient_profile: Optional[str] = None,
         semantic_memories: Optional[str] = None,
         gita_context: Optional[str] = None,
+        biometrics: Optional[Any] = None,
         task_type: TaskType = TaskType.ROUTINE_CHAT,
         force_provider: Optional[ProviderPreference] = None,
     ) -> AsyncIterator[str]:
@@ -444,6 +448,7 @@ class LLMOrchestrator:
                 patient_profile=patient_profile,
                 semantic_memories=semantic_memories,
                 gita_context=gita_context,
+                biometrics=biometrics,
             ):
                 yield token
             # Primary succeeded — emit routing metadata
@@ -478,6 +483,7 @@ class LLMOrchestrator:
                     patient_profile=patient_profile,
                     semantic_memories=semantic_memories,
                     gita_context=gita_context,
+                    biometrics=biometrics,
                 ):
                     yield token
                 # Fallback succeeded — emit routing metadata

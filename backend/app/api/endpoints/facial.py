@@ -73,3 +73,12 @@ async def predict_emotion(file: UploadFile = File(...)):
         # Log at DEBUG level to reduce terminal noise during normal webcam polling
         logger.debug("Facial emotion prediction skipped: %s", exc)
         return EmotionResponse(emotion="neutral", confidence=0.0, message="Frame processing error")
+
+
+@router.post("/predict/biomarkers", response_model=EmotionResponse)
+async def predict_biomarkers(file: UploadFile = File(...)):
+    """
+    Endpoint for rich visual biomarkers: returns 16-state clinical affective classification,
+    continuous Valence & Arousal, and estimated oculomotor strain.
+    """
+    return await predict_emotion(file)

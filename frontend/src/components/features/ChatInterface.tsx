@@ -29,8 +29,11 @@ interface Message {
   routing?: RoutingMetadata;
 }
 
+import type { BiometricTelemetry } from "../../services/api";
+
 interface ChatProps {
   currentEmotion: string;
+  biometrics?: BiometricTelemetry | null;
   sessionId?: string;
 }
 
@@ -61,7 +64,7 @@ const fetchRemedyForReport = async (report: PsychReport): Promise<RemedyData | u
 };
 
 // ── Main ChatInterface ─────────────────────────────────────────────────────
-const ChatInterface: React.FC<ChatProps> = ({ currentEmotion, sessionId }) => {
+const ChatInterface: React.FC<ChatProps> = ({ currentEmotion, biometrics, sessionId }) => {
   const { user } = useUser();
   const navigate = useNavigate();
   const {
@@ -181,7 +184,7 @@ const ChatInterface: React.FC<ChatProps> = ({ currentEmotion, sessionId }) => {
 
         let fullResponse = "";
         try {
-          const stream = streamChatMessage(userText, currentEmotion, historyForApi);
+          const stream = streamChatMessage(userText, currentEmotion, historyForApi, biometrics ?? undefined);
           for await (const chunk of stream) {
             fullResponse += chunk;
             const displayContent = fullResponse.split("---JSON---")[0].split("---ROUTING---")[0].trim();
@@ -222,7 +225,7 @@ const ChatInterface: React.FC<ChatProps> = ({ currentEmotion, sessionId }) => {
           });
         } catch (streamError) {
           console.warn("Streaming failed, using fallback:", streamError);
-          const result = await sendChatMessage(userText, currentEmotion, historyForApi);
+          const result = await sendChatMessage(userText, currentEmotion, historyForApi, undefined, biometrics ?? undefined);
           const fbMsg: Message = {
             role: "assistant",
             content: result.response,
@@ -261,7 +264,7 @@ const ChatInterface: React.FC<ChatProps> = ({ currentEmotion, sessionId }) => {
 
       let fullResponse = "";
       try {
-        const stream = streamChatMessage(userText, currentEmotion, historyForApi);
+        const stream = streamChatMessage(userText, currentEmotion, historyForApi, biometrics ?? undefined);
         for await (const chunk of stream) {
           fullResponse += chunk;
           const displayContent = fullResponse.split("---JSON---")[0].split("---ROUTING---")[0].trim();
@@ -307,7 +310,7 @@ const ChatInterface: React.FC<ChatProps> = ({ currentEmotion, sessionId }) => {
         });
       } catch (streamError) {
         console.warn("Streaming failed, using fallback:", streamError);
-        const result = await sendChatMessage(userText, currentEmotion, historyForApi);
+        const result = await sendChatMessage(userText, currentEmotion, historyForApi, user?.id, biometrics ?? undefined);
         const fbMsg: Message = {
           role: "assistant",
           content: result.response,

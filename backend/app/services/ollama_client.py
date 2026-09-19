@@ -100,6 +100,7 @@ class OllamaClient(BaseLLMClient):
         patient_profile: Optional[str] = None,
         semantic_memories: Optional[str] = None,
         gita_context: Optional[str] = None,
+        biometrics: Optional[Any] = None,
     ) -> tuple[str, PsychReport]:
         if history is None:
             history = []
@@ -111,6 +112,7 @@ class OllamaClient(BaseLLMClient):
             patient_profile=patient_profile,
             semantic_memories=semantic_memories,
             gita_context=gita_context,
+            biometrics=biometrics,
         )
 
         payload = {
@@ -195,6 +197,7 @@ class OllamaClient(BaseLLMClient):
         patient_profile: Optional[str] = None,
         semantic_memories: Optional[str] = None,
         gita_context: Optional[str] = None,
+        biometrics: Optional[Any] = None,
     ) -> AsyncIterator[str]:
         if history is None:
             history = []
@@ -206,6 +209,7 @@ class OllamaClient(BaseLLMClient):
             patient_profile=patient_profile,
             semantic_memories=semantic_memories,
             gita_context=gita_context,
+            biometrics=biometrics,
         )
 
         payload = {

@@ -23,33 +23,53 @@ logger = logging.getLogger(__name__)
 # System Prompt (used by both providers)
 # ---------------------------------------------------------------------------
 
-SYSTEM_PROMPT = """You are PsyPredict — a compassionate clinical psychologist with deep expertise in CBT, DBT, mindfulness, and the profound psychological wisdom of the Bhagavad Gita, Upanishads, Mahabharata, Vedas, and Ramayana. You combine evidence-based therapy with ancient wisdom to help each person find peace and resilience.
+SYSTEM_PROMPT = """You are PsyPredict — a compassionate, wise clinical psychologist with deep expertise in CBT, ACT, mindfulness, and the profound psychological wisdom of the Bhagavad Gita, Upanishads, Mahabharata, Vedas, and Ramayana. You combine evidence-based clinical therapy with ancient spiritual psychology to help each person navigate their emotions and life dilemmas.
 
 Your role is twofold:
-1. Respond as a warm, caring, gentle psychologist talking to someone who needs comfort and clear guidance.
+1. Respond as an insightful, warm, structured therapist talking directly to someone who needs clarity, comfort, and real guidance.
 2. Provide a structured backend psychological assessment in JSON format.
 
-== CRITICAL PATIENT ACCESSIBILITY & SIMPLICITY RULES (ANTI-OVERWHELM) ==
-- SPEAK IN CLEAR, GENTLE, SIMPLE LANGUAGE: The person speaking to you may be struggling with anxiety, depression, brain fog, or emotional exhaustion. Never overwhelm them.
-- NO DENSE JARGON: Strictly avoid complex academic treatises, dense philosophical debates, or heavy clinical terminology in your conversational reply.
-- USE SIMPLE EVERYDAY METAPHORS: Whenever you share a concept (like detachment, equanimity, or endurance), immediately explain it using a warm, simple real-life picture (e.g., watering a plant, watching clouds pass in the sky, letting muddy water settle).
-- LOW COGNITIVE LOAD: Focus on ONE core soothing insight per response. Do not give a long lecture.
-- WARMTH & VALIDATION FIRST: Always validate their feelings first. Make them feel heard, safe, and not judged.
+== CLINICAL RESPONSE ARCHITECTURE (FOLLOW IN EVERY RESPONSE) ==
 
-== ANCIENT SCRIPTURAL WISDOM & METAPHOR INTEGRATION RULES ==
-- When wisdom is provided in the ANCIENT SCRIPTURAL & GITA WISDOM CONTEXT below (from the Gita, Upanishads, Mahabharata, Vedas, or Ramayana), weave it into your reply softly and naturally.
-- Quote the citation gently (e.g., "In the Gita, Chapter 2, Verse 47..." or "In the Katha Upanishad...").
-- Immediately use the provided GENTLE METAPHOR to explain the meaning in simple, human terms that anyone can understand.
-- If a Sanskrit word is mentioned (like Titiksha, Samatvam, Nishkama Karma, or Sakshi), translate it right away into plain, comforting everyday English.
-- Connect this wisdom directly to the user's specific feelings today.
+1. SIMPLE, COMPASSIONATE EXPLANATION (ANTI-OVERWHELM)
+- Start by validating the patient's feelings and providing a simple, crystal-clear explanation of what they are experiencing emotionally or mentally.
+- Speak in human, plain, comforting language. Never dump academic jargon or dense clinical labels in your conversational response.
 
-== PATIENT HISTORY & ADAPTIVE RULES ==
-- If PATIENT HISTORY is provided below, use it to personalize your response with warmth.
-- Reference progress or patterns gently (e.g., "I remember from our previous talk...").
-- Be a psychologist who truly remembers and walks alongside them.
+2. THERAPEUTIC TRANSPARENCY: "WHAT WE ARE DOING RIGHT NOW"
+- Explicitly tell the patient what type of therapeutic or psychological work you are engaging in together right now.
+- Examples:
+  • "What we are doing right now: Socratic Cognitive Restructuring paired with Viveka (ancient discernment of what is within your control vs. what is not)."
+  • "What we are doing right now: Somatic nervous system regulation paired with Sakshi Bhava (stepping into the calm witness to unhook from emotional flooding)."
+  • "What we are doing right now: Values Clarification and Dharma inquiry to resolve an internal conflict between duty and personal boundaries."
 
-== GENTLE ACTION STEP ==
-- End your conversational response with ONE tiny, doable micro-step (e.g., "Right now, take one slow, deep breath and let your shoulders drop," or "Drink a small sip of water and pause for 30 seconds."). Never give complex homework that creates pressure.
+3. COMPLEX SITUATION & MULTI-POSSIBILITY ANALYSIS
+- When the patient presents a complex situation, decision dilemma, or tangled feelings:
+  • Briefly break down the realistic possibilities or perspectives:
+    - Possibility 1 (Scenario A): One angle of what might be happening or what this choice leads to (e.g., emotional burnout, uncommunicated expectations).
+    - Possibility 2 (Scenario B): Another valid angle or outcome (e.g., fear of the unknown, protective defense mechanism, underlying grief).
+    - Possibility 3 (if applicable): External environmental or relationship dynamics.
+  • Explain each possibility briefly and empathetically so the patient sees the full picture without confusion.
+  • Then suggest the BEST PATH FORWARD: Clearly recommend the most grounded, psychologically healthy, and ethically sound action or mindset (highest Dharma, self-respect, and inner peace).
+
+4. ANCIENT WISDOM & INTUITIVE METAPHOR (DYNAMIC, DIVERSE, ZERO SCRIPTURAL YAP)
+- INTERNALIZE THE ESSENCE, DO NOT RECITE SCRIPTURE:
+  • STRICTLY FORBIDDEN: Robotic, repetitive formulas like "In Chapter 2, Verse 47 of the Bhagavad Gita..." or "The scriptures say in Verse X...". Never repeat book names, chapter numbers, or verse citations message after message. That feels mechanical, preachy, lecturing, and boring.
+  • Do NOT yap about historical backgrounds, text origins, or verse numbering unless the patient specifically asks for book references.
+  • Speak like an experienced, deeply empathetic therapist who has lived wisdom in their bones. Share the core psychological insight or mindset shift organically.
+  • VARY YOUR DELIVERY DYNAMICALLY ACROSS TURNS — NEVER SOUND LIKE A REPETITIVE SCRIPT OR LOOP:
+    - In one turn, use an intuitive everyday metaphor: "Think of your mind like clear water—ripples happen on the surface, but the depth underneath remains undisturbed."
+    - In another turn, ask an introspective reflective question inspired by the principle: "What would happen if you poured your whole heart into the step in front of you today, without demanding how tomorrow turns out?"
+    - In another turn, weave the insight directly into conversational advice without naming any tradition: "When we attach our sense of self to outcomes outside our control, anxiety naturally surges."
+    - In another turn, introduce it gently as timeless perspective: "There is an ancient reflection on this: our true strength lies in our honest effort, not in the exhausting need to control every consequence."
+  • Translate Sanskrit terms (Samatvam, Sakshi, Nishkama Karma, Dharma) directly into modern psychological realities (emotional equilibrium, the calm observer stance, unhooking from external validation, purposeful duty) without academic lecturing.
+  • Every turn MUST feel fresh, conversational, tailored, and spontaneous.
+
+5. GENTLE SOMATIC MICRO-STEP
+- End your conversational response with ONE tiny, doable micro-action right now (e.g., "Right now, take one slow, deep breath, let your shoulders drop, and unclench your jaw."). Never give complex homework that creates pressure.
+
+== LIVE BIOMETRIC & OCULOMOTOR OBSERVATION RULES ==
+- If [LIVE BIOMETRIC & OCULOMOTOR OBSERVATIONS] are provided, you have real-time access to the patient's eye gaze vectors, blink rates, and facial tension.
+- Act as an observant clinician: notice downcast eyes, darting saccades, or jaw clenching, and compassionately weave these cues into your opening or grounding guidance.
 
 == JSON ASSESSMENT RULES ==
 After your conversational response, add the marker: ---JSON---
@@ -77,7 +97,7 @@ PSYCH_REPORT_SCHEMA:
 }
 
 Output format:
-<Your warm, gentle, simple psychologist response here — clear, relatable metaphor, one gentle micro-step>
+<Your warm, insightful, structured psychologist response here — simple explanation, what type of work we are doing right now, multi-possibility breakdown if complex, best path suggested, ancient wisdom metaphor, one gentle micro-step>
 ---JSON---
 { ...psych report json... }
 """
@@ -112,6 +132,68 @@ def trim_history(
 
 
 # ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Multimodal & Biometric Context Formatter
+# ---------------------------------------------------------------------------
+
+def format_multimodal_context(
+    face_emotion: str,
+    text_emotion_summary: Optional[str] = None,
+    biometrics: Optional[Any] = None,
+) -> str:
+    """Formats rich visual, oculomotor, and biometric observations for prompt injection."""
+    if biometrics:
+        if hasattr(biometrics, "dominant_emotion"):
+            b_dom = biometrics.dominant_emotion or face_emotion
+            b_val = getattr(biometrics, "valence", 0.0)
+            b_arousal = getattr(biometrics, "arousal", 0.0)
+            b_gaze = getattr(biometrics, "gaze_direction", "direct")
+            b_contact = getattr(biometrics, "eye_contact_ratio", 1.0)
+            b_bpm = getattr(biometrics, "blink_rate_bpm", 18.0)
+            b_tension = getattr(biometrics, "facial_tension_index", 0.0)
+            b_triguna = getattr(biometrics, "triguna_dominant", None)
+        elif isinstance(biometrics, dict):
+            b_dom = biometrics.get("dominant_emotion", face_emotion)
+            b_val = biometrics.get("valence", 0.0)
+            b_arousal = biometrics.get("arousal", 0.0)
+            b_gaze = biometrics.get("gaze_direction", "direct")
+            b_contact = biometrics.get("eye_contact_ratio", 1.0)
+            b_bpm = biometrics.get("blink_rate_bpm", 18.0)
+            b_tension = biometrics.get("facial_tension_index", 0.0)
+            b_triguna = biometrics.get("triguna_dominant", None)
+        else:
+            b_dom, b_val, b_arousal, b_gaze, b_contact, b_bpm, b_tension, b_triguna = (
+                face_emotion, 0.0, 0.0, "direct", 1.0, 18.0, 0.0, None
+            )
+
+        multimodal_ctx = (
+            f"\n\n[LIVE BIOMETRIC & OCULOMOTOR OBSERVATIONS]\n"
+            f"• Affective State: {b_dom.replace('_', ' ').title()} (Valence: {b_val:+.2f}, Arousal: {b_arousal:.2f})\n"
+            f"• Eye Movement & Gaze: Gaze vector is {b_gaze.upper()} (Eye contact ratio: {b_contact*100:.0f}%)\n"
+            f"• Blink Dynamics: {b_bpm:.0f} blinks/min ({'Elevated sympathetic stress / hyperarousal' if b_bpm > 28 else 'Slowed / blunted / fatigued' if b_bpm < 10 else 'Regulated range'})\n"
+            f"• Facial Micro-Tension: {b_tension*100:.0f}% ({'Elevated brow/jaw strain' if b_tension > 0.4 else 'Mild/Relaxed'})\n"
+        )
+        if b_triguna:
+            multimodal_ctx += f"• Vedic Triguna Mapping: {b_triguna.upper()}\n"
+        multimodal_ctx += (
+            f"• THERAPIST INSTRUCTION: Mindfully acknowledge these live visual & somatic cues "
+            f"(e.g., if gaze is downcast, acknowledge it gently; if facial tension is high, guide a calming breath).\n"
+        )
+        if text_emotion_summary:
+            multimodal_ctx += f"• Text Emotion (DistilBERT): {text_emotion_summary}\n"
+        return multimodal_ctx
+
+    face_distress = FACE_DISTRESS_MAP.get(face_emotion.lower(), 0.20)
+    ctx = (
+        f"\n\n[MULTIMODAL CONTEXT]\n"
+        f"Face emotion (webcam): {face_emotion} (distress score: {face_distress:.2f})\n"
+    )
+    if text_emotion_summary:
+        ctx += f"Text emotion (DistilBERT): {text_emotion_summary}\n"
+    return ctx
+
+
+# ---------------------------------------------------------------------------
 # Messages Builder (chat-completion format used by both Groq and Ollama)
 # ---------------------------------------------------------------------------
 
@@ -124,6 +206,7 @@ def build_messages(
     patient_profile: Optional[str] = None,
     semantic_memories: Optional[str] = None,
     gita_context: Optional[str] = None,
+    biometrics: Optional[Any] = None,
 ) -> list:
     """
     Builds the messages array for chat-completions-style APIs.
@@ -151,7 +234,9 @@ def build_messages(
 
     if gita_context:
         system_content += (
-            f"\n\nANCIENT SCRIPTURAL & GITA WISDOM CONTEXT (weave this wisdom into your response using its gentle everyday metaphor and micro-step):\n"
+            f"\n\n[PHILOSOPHICAL & CONTEMPLATIVE KNOWLEDGE BASE]\n"
+            f"(Internalized Clinical Wisdom — DO NOT quote chapter or verse numbers. Do NOT lecture on the source text. "
+            f"Digest this underlying principle and express it naturally as a living therapeutic insight or practical metaphor):\n"
             f"{gita_context}"
         )
 
@@ -166,14 +251,7 @@ def build_messages(
         })
 
     # Multimodal context appended to the current user message
-    face_distress = FACE_DISTRESS_MAP.get(face_emotion.lower(), 0.20)
-    multimodal_ctx = (
-        f"\n\n[MULTIMODAL CONTEXT]\n"
-        f"Face emotion (webcam): {face_emotion} (distress score: {face_distress:.2f})\n"
-    )
-    if text_emotion_summary:
-        multimodal_ctx += f"Text emotion (DistilBERT): {text_emotion_summary}\n"
-
+    multimodal_ctx = format_multimodal_context(face_emotion, text_emotion_summary, biometrics)
     final_user_content = user_text + multimodal_ctx
     messages.append({"role": "user", "content": final_user_content})
 
@@ -289,10 +367,9 @@ _FRAMEWORK_DIRECTIVES = {
         "and how past experiences shape current feelings."
     ),
     "gita": (
-        "HEAVILY emphasize Bhagavad Gita philosophical insights. "
-        "Lead with Gita wisdom and weave multiple shlokas naturally. "
-        "Use Sanskrit terms extensively with explanations. "
-        "Frame every situation through the lens of Dharma, Karma, and Self-realization."
+        "Emphasize the deep psychological and contemplative wisdom of the Bhagavad Gita and Vedic philosophy. "
+        "DO NOT recite chapter numbers or verse numbers. Instead, weave the timeless insights (Dharma, Sakshi/witness awareness, Samatvam/equanimity, Nishkama Karma) "
+        "naturally into everyday language and relatable metaphors so the patient feels grounded without feeling lectured."
     ),
     "auto": "",  # Let the LLM choose based on context
 }
@@ -405,7 +482,9 @@ def build_adaptive_system_prompt(
     # --- Gita Context ---
     if gita_candidates:
         prompt_parts.append(
-            f"\n\nGITA WISDOM CONTEXT (choose the most relevant shloka and weave it naturally):\n"
+            f"\n\n[PHILOSOPHICAL & CONTEMPLATIVE KNOWLEDGE BASE]\n"
+            f"(Internalized Clinical Wisdom — DO NOT cite chapter/verse numbers robotically. "
+            f"Extract the core psychological truth and express it naturally without textbook lecturing):\n"
             f"{gita_candidates}"
         )
 
@@ -424,6 +503,7 @@ def build_adaptive_messages(
     patient_preferences: Optional[dict] = None,
     session_context: Optional[dict] = None,
     avg_feedback: Optional[float] = None,
+    biometrics: Optional[Any] = None,
 ) -> list:
     """
     Enhanced build_messages that uses adaptive system prompt.
@@ -452,14 +532,7 @@ def build_adaptive_messages(
         })
 
     # Multimodal context appended to the current user message
-    face_distress = FACE_DISTRESS_MAP.get(face_emotion.lower(), 0.20)
-    multimodal_ctx = (
-        f"\n\n[MULTIMODAL CONTEXT]\n"
-        f"Face emotion (webcam): {face_emotion} (distress score: {face_distress:.2f})\n"
-    )
-    if text_emotion_summary:
-        multimodal_ctx += f"Text emotion (DistilBERT): {text_emotion_summary}\n"
-
+    multimodal_ctx = format_multimodal_context(face_emotion, text_emotion_summary, biometrics)
     final_user_content = user_text + multimodal_ctx
     messages.append({"role": "user", "content": final_user_content})
 

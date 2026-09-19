@@ -7,8 +7,11 @@ import RemedyCard from "../components/features/RemedyCard";
 
 import Navbar from "../components/common/Navbar";
 
+import type { BiometricTelemetry } from "../services/api";
+
 const Dashboard: React.FC = () => {
   const [currentEmotion, setCurrentEmotion] = useState<string>("neutral");
+  const [biometrics, setBiometrics] = useState<BiometricTelemetry | null>(null);
   const { isSegmentSelected } = useSegment();
   const navigate = useNavigate();
 
@@ -40,7 +43,7 @@ const Dashboard: React.FC = () => {
                 <h2 className="text-sm font-semibold text-gray-500 uppercase mb-2">
                   Camera Analysis
                 </h2>
-                <WebcamFeed onEmotionDetected={setCurrentEmotion} />
+                <WebcamFeed onEmotionDetected={setCurrentEmotion} onBiometricsDetected={setBiometrics} />
               </div>
 
               {/* Therapeutic Insight */}
@@ -59,7 +62,7 @@ const Dashboard: React.FC = () => {
                   </h2>
                 </div>
                 <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0">
-                  <ChatInterface currentEmotion={currentEmotion} />
+                  <ChatInterface currentEmotion={currentEmotion} biometrics={biometrics} />
                 </div>
               </div>
             </div>
@@ -79,7 +82,7 @@ const Dashboard: React.FC = () => {
                   <h2 className="text-sm font-semibold text-gray-500 uppercase mb-2">
                     Camera Analysis
                   </h2>
-                  <WebcamFeed onEmotionDetected={setCurrentEmotion} />
+                  <WebcamFeed onEmotionDetected={setCurrentEmotion} onBiometricsDetected={setBiometrics} />
                 </div>
 
                 <div className="bg-white p-3 lg:p-4 rounded-xl shadow-md shrink-0">
@@ -100,7 +103,7 @@ const Dashboard: React.FC = () => {
                 </div>
                 {/* ChatInterface takes remaining height */}
                 <div className="flex-1 min-h-0 relative">
-                  <ChatInterface currentEmotion={currentEmotion} />
+                  <ChatInterface currentEmotion={currentEmotion} biometrics={biometrics} />
                 </div>
               </div>
             </div>

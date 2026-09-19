@@ -143,6 +143,22 @@ class RemedyResponse(BaseModel):
 # ---------------------------------------------------------------------------
 # Facial / Emotion Endpoint
 # ---------------------------------------------------------------------------
+# Biometric Visual & Oculomotor Telemetry
+# ---------------------------------------------------------------------------
+
+class BiometricTelemetry(BaseModel):
+    dominant_emotion: str = Field(default="neutral", description="Expanded affective state (16+ classes)")
+    confidence: float = Field(default=0.0, ge=0.0, le=100.0)
+    valence: float = Field(default=0.0, ge=-1.0, le=1.0, description="Pleasantness / positivity (-1.0 to +1.0)")
+    arousal: float = Field(default=0.0, ge=0.0, le=1.0, description="Physiological activation (0.0 to 1.0)")
+    distress_score: float = Field(default=0.0, ge=0.0, le=1.0, description="Calculated visual distress index")
+    gaze_direction: str = Field(default="direct", description="direct | downcast | darting | avoidant | upward")
+    eye_contact_ratio: float = Field(default=1.0, ge=0.0, le=1.0, description="Ratio of direct eye contact (0.0 to 1.0)")
+    blink_rate_bpm: float = Field(default=18.0, ge=0.0, le=120.0, description="Estimated blinks per minute")
+    facial_tension_index: float = Field(default=0.0, ge=0.0, le=1.0, description="Composite brow/jaw tension (0.0 to 1.0)")
+    triguna_dominant: Optional[str] = Field(default=None, description="sattva | rajas | tamas")
+    notes: Optional[str] = None
+
 
 class EmotionResponse(BaseModel):
     emotion: Optional[str] = None
@@ -150,6 +166,7 @@ class EmotionResponse(BaseModel):
     face_box: Optional[List[int]] = None
     message: Optional[str] = None
     error: Optional[str] = None
+    biometrics: Optional[BiometricTelemetry] = None
 
 
 # ---------------------------------------------------------------------------
@@ -159,6 +176,7 @@ class EmotionResponse(BaseModel):
 class ChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=2000)
     emotion: Optional[str] = Field(default="neutral", description="Face emotion from webcam")
+    biometrics: Optional[BiometricTelemetry] = Field(default=None, description="Rich visual and oculomotor biometrics")
     history: List[ConversationMessage] = Field(default_factory=list)
     stream: bool = Field(default=False, description="Enable streaming response")
     user_id: Optional[str] = Field(default=None, description="Patient user ID for adaptive memory")

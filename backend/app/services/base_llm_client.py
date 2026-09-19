@@ -31,6 +31,7 @@ class BaseLLMClient(ABC):
         patient_profile: Optional[str] = None,
         semantic_memories: Optional[str] = None,
         gita_context: Optional[str] = None,
+        biometrics: Optional[Any] = None,
     ) -> tuple[str, PsychReport]:
         """
         Generate a complete (non-streaming) response.
@@ -51,6 +52,7 @@ class BaseLLMClient(ABC):
         patient_profile: Optional[str] = None,
         semantic_memories: Optional[str] = None,
         gita_context: Optional[str] = None,
+        biometrics: Optional[Any] = None,
     ) -> AsyncIterator[str]:
         """
         Yield raw text tokens as they arrive from the LLM.
